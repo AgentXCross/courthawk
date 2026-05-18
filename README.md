@@ -1,4 +1,4 @@
-# Computer Vision for Tennis Analytics using YOLO, ResNet, Pose Estimation, and XGBoost
+# CourtVision: Computer Vision for Tennis Analytics
 
 ![Demo](output-videos/sinner_zverev_output.gif)
 
