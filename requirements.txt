@@ -1,0 +1,15 @@
+# courtvision-pipeline
+numpy
+opencv-python
+torch
+torchvision
+ultralytics
+mediapipe
+Pillow
+pandas
+scipy
+xgboost
+
+# backend
+fastapi
+uvicorn
