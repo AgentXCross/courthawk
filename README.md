@@ -1,6 +1,6 @@
 # CourtVision: Computer Vision for Tennis Analytics
 
-![Demo](output-videos/sinner_zverev_output.gif)
+![Demo](courtvision-pipeline/output-videos/sinner_zverev_output.gif)
 
 A computer vision system for analyzing tennis footage, tracking players and the ball, detecting and classifying shot types, and overlaying stats on a mini-court diagram.
 
