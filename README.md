@@ -30,7 +30,7 @@ For each detected ball strike, the pipeline samples up to 7 frames (+ and - 3 ar
 
 See `pose_estimation/features.txt` for the full feature list.
 
-## File Structure
+## File Structure (Not Updated Yet)
 
 ```
 tennis-cv-analysis/
