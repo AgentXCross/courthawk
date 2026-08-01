@@ -1,8 +1,9 @@
 venv
 
+# Environment Variables
 .env
 
-yolov8x.pt
+# YOLO, Keypoints Model, XGBoost for Shot Classification
 models
 
 courtvision-pipeline/training/data
@@ -14,4 +15,3 @@ pose_estimation/data
 
 __pycache__
 .DS_Store
-.claude
