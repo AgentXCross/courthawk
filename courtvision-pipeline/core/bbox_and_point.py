@@ -11,32 +11,27 @@ class Point:
 
 @dataclass(frozen = True)
 class BoundingBox:
-    # top left
-    x1: float 
-    y1: float
-
-    # bottom right
-    x2: float
-    y2: float 
+    tl: Point # top left: (x1, y1)
+    br: Point # bottom right: (x2, y2)
 
     @property
     def center(self) -> Point:
-        center_x = (self.x1 + self.x2) / 2
-        center_y = (self.y1 + self.y2) / 2
+        center_x = (self.tl.x + self.br.x) / 2
+        center_y = (self.tl.y + self.br.y) / 2
         return Point(center_x, center_y)
 
     @property
     def foot(self) -> Point:
-        center_x = (self.x1 + self.x2) / 2
-        bottom_y = max(self.y1, self.y2)
+        center_x = (self.tl.x + self.br.x) / 2
+        bottom_y = max(self.tl.y, self.br.y)
         return Point(center_x, bottom_y)
 
     @property
     def height(self) -> float:
-        return abs(self.y1 - self.y2)
+        return abs(self.tl.y - self.br.y)
 
 
-def measure_distance(p1: Point, p2: Point) -> float:
+def euclidean_distance(p1: Point, p2: Point) -> float:
     """Euclidean distance."""
     a = p2.x - p1.x
     b = p2.y - p1.y
@@ -51,7 +46,7 @@ def closest_keypoint_index(point: Point, keypoints: list[Point], keypoint_indice
 
     for index in keypoint_indices:
         keypoint = keypoints[index]
-        distance = measure_distance(point, keypoint)
+        distance = euclidean_distance(point, keypoint)
 
         if distance < closest_distance:
             closest_distance = distance
