@@ -1,16 +1,44 @@
 """Bounding Box and Point dataclass definitions and utility functions.""" 
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 
 @dataclass(frozen = True)
 class Point:
+    """A Point is defined by its x and y-coordinates."""
     x: float
     y: float
 
 
+    def __add__(self, other: Point) -> Point:
+        return Point(
+            self.x + other.x,
+            self.y + other.y
+        )
+
+    def __sub__(self, other: Point) -> Point:
+        return Point(
+            self.x - other.x,
+            self.y - other.y
+        )
+
+    def __mul__(self, scalar: float) -> Point:
+        return Point(
+            x = self.x * scalar,
+            y = self.y * scalar,
+        )
+
+    def __truediv__(self, scalar: float) -> Point:
+        return Point(
+            x = self.x / scalar,
+            y = self.y / scalar,
+        )
+
 @dataclass(frozen = True)
 class BoundingBox:
+    """A BoundingBox is defined by 2 Points representing its top left and bottom right coordinates."""
     tl: Point # top left: (x1, y1)
     br: Point # bottom right: (x2, y2)
 
