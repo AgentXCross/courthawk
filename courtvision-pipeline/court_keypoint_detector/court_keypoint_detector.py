@@ -1,4 +1,8 @@
-"""Determine the 14 court keypoints in a tennis court."""
+"""
+CourtKeypointDetector class.
+
+Determine the 14 court keypoints in a tennis court.
+"""
 
 from dataclasses import dataclass
 

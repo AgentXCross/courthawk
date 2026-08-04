@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 import cv2
 import pickle
-from utils import measure_distance, get_center_bbox
+from core import measure_distance, get_center_bbox
 
 class PlayerTracker:
     def __init__(self, model_path):

@@ -1,5 +1,5 @@
 import cv2
-from utils import (
+from core import (
     convert_pixel_distance_to_meters, 
     convert_meters_to_pixel_distance,
     get_foot_position,

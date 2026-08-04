@@ -1,13 +1,67 @@
+"""
+BallTracker class.
+
+Tracks the ball path using a YOLO model.
+Also handles storing the ball path data as a pd.DataFrame.
+"""
+
+
 from ultralytics import YOLO
-import cv2
+
 import pickle
+from pathlib import Path
+
+import cv2
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
 
+from core import (
+    BoundingBox
+)
+
+
 class BallTracker:
-    def __init__(self, model_path):
+    def __init__(self, model_path: Path):
         self.model = YOLO(model_path)
+
+
+    def detect_frames(
+            self, 
+            frames: np.ndarray, 
+            read_from_stub: bool = False, 
+            stub_path: Path = None
+        ) :
+        ball_detections = []
+
+        # Load stubs
+        if read_from_stub and stub_path is not None:
+            with open(stub_path, 'rb') as f:
+                ball_detections = pickle.load(f)
+            return ball_detections
+
+        for frame in frames:
+            ball_dict = self.detect_frame(frame)
+            ball_detections.append(ball_dict)
+        
+        if stub_path is not None:
+            with open(stub_path, 'wb') as f:
+                pickle.dump(ball_detections, f)
+        
+        return ball_detections
+
+    
+    def detect_frame(self, frame: np.ndarray):
+        results = self.model.predict(frame, conf = 0.10)[0]
+
+        ball_dict = {}
+        for box in results.boxes:
+            result = box.xyxy.tolist()[0] 
+            ball_dict[1] = result
+            break
+            
+        return ball_dict
+
 
     def interpolate_ball_positions(self, ball_positions):
         ball_positions = [x.get(1, []) for x in ball_positions]
@@ -55,35 +109,7 @@ class BallTracker:
         peaks, _ = find_peaks(-min_dist, prominence = 50, distance = 15)
         return list(peaks)
 
-    def detect_frames(self, frames, read_from_stub = False, stub_path = None):
-        ball_detections = []
-        
-        if read_from_stub and stub_path is not None:
-            with open(stub_path, 'rb') as f:
-                ball_detections = pickle.load(f)
-            return ball_detections
-
-        for frame in frames:
-            ball_dict = self.detect_frame(frame)
-            ball_detections.append(ball_dict)
-        
-        if stub_path is not None:
-            with open(stub_path, 'wb') as f:
-                pickle.dump(ball_detections, f)
-        
-        return ball_detections
-    
-    def detect_frame(self, frame):
-        results = self.model.predict(frame, conf = 0.10)[0]
-
-        ball_dict = {}
-        for box in results.boxes:
-            result = box.xyxy.tolist()[0]
-            ball_dict[1] = result
-            break
-            
-        return ball_dict
-
+    # WIll remove this function later
     def draw_bboxes(self, video_frames, ball_detections):
         output_video_frames = []
         for frame, bbox in zip(video_frames, ball_detections):

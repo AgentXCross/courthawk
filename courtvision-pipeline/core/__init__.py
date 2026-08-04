@@ -1,6 +1,7 @@
 from .video import Video
 from .data_structures import (
     Point, 
+    Line,
     BoundingBox,
     euclidean_distance,
     closest_keypoint_index,
