@@ -12,18 +12,9 @@ from pathlib import Path
 
 from core import (
     Point,
+    Line,
     euclidean_distance,
 )
-
-
-@dataclass(frozen = True)
-class Line:
-    """A Line is defined by 2 Points representing its endpoints."""
-    # One end of the line
-    end_1: Point
-
-    # Other end of the line
-    end_2: Point
 
 
 def _detect_lines(crop: np.ndarray) -> list[Line]:
@@ -99,7 +90,7 @@ def _merge_lines(
 
             reverse_orientation = (
                 euclidean_distance(current_merged_line.end_1, other_line.end_2) < merge_distance 
-                and euclidean_distance(current_merged_line.end_2. other_line.end_1) < merge_distance
+                and euclidean_distance(current_merged_line.end_2, other_line.end_1) < merge_distance
             )
 
             if same_orientation:
@@ -130,7 +121,7 @@ def _merge_lines(
     return merged_lines
 
 
-def _line_intersection(line1: Line, line2: Line) -> Point | None:
+def _point_of_intersection(line1: Line, line2: Line) -> Point | None:
     """
     Returns the (x, y) Point intersection of the two Line segments.
     Returns None if the lines are parallel or coincident.
@@ -252,8 +243,8 @@ class CourtKeypointDetector:
         Calls predict on each frame and returns the element-wise average of all
         keypoint predictions as a list of Points.
 
-        predict_average is the function called by the user. It calls predict and
-        refine_keypoints functions.
+        predict_average is the function called by the user. It calls predict which in turn
+        calls refine_keypoints.
         """
         assert len(frames) > 0
         all_keypoints: list[list[Point]] = [self.predict(frame) for frame in frames]
@@ -277,46 +268,52 @@ class CourtKeypointDetector:
             image: np.ndarray, 
             keypoints: list[Point],
             crop_size: int = 50
-    ):
+    ) -> list[Point]:
         """
         Crops an crop_size * 2 x crop_size * 2 window around each initial keypoint.
         Detects lines in that crop and replaces the keypoint with the intersection of those lines if exactly
         2 distinct lines are found and their intersection falls within the crop.
 
         Keypoints with no clean intersection are left unchanged.
+
+        Produces output to indicate if a replacement is made or not.
         """
+        assert(len(keypoints) == 14)
+        refined_keypoints: list[Point] = keypoints.copy()
         img_height, img_width = image.shape[:2] # numpy arrays are row, col, channel
 
-        for keypoint in keypoints:
-            x_center = int(keypoint.x)
-            y_center = int(keypoint.y)
+        for i in range(len(keypoints)):
+            refined = False
+            x_center = int(keypoints[i].x)
+            y_center = int(keypoints[i].y)
 
-        for i in range(0, len(keypoints), 2):
-            x_ct = int(keypoints[i])
-            y_ct = int(keypoints[i + 1])
+            x_min = max(0, x_center - crop_size)
+            x_max = min(img_width, x_center + crop_size)
+            y_min = max(0, y_center - crop_size)
+            y_max = min(img_height, y_center + crop_size)
 
-            x_min = max(x_ct - crop_size, 0)
-            x_max = min(x_ct + crop_size, img_w)
-            y_min = max(y_ct - crop_size, 0)
-            y_max = min(y_ct + crop_size, img_h)
-
-            crop = image[y_min:y_max, x_min:x_max]
-            if crop.size == 0:
+            cropped = image[y_min:y_max, x_min:x_max]
+            if cropped.size == 0: # Nothing was cropped out
                 continue
 
-            lines = _detect_lines(crop)
-            if len(lines) > 1:
-                lines = _merge_lines(lines)
-                if len(lines) == 2:
-                    pt = _line_intersection(lines[0], lines[1])
-                    if pt is not None:
-                        nx, ny = int(pt[0]), int(pt[1])
-                        if 0 < nx < crop.shape[1] and 0 < ny < crop.shape[0]:
-                            refined[i] = x_min + nx
-                            refined[i + 1] = y_min + ny
+            lines: list[Line] = _detect_lines(cropped)
+            if len(lines) > 1: # We require at least 2 lines to find a POI
+                lines = _merge_lines(lines, 30)
+                if len(lines) == 2: # Require exactly 2 lines after merging to determine an intersection
+                    poi = _point_of_intersection(lines[0], lines[1])
+                    if poi is not None: # Can be None if lines are parallel or coincident
+                        if 0 < poi.x < cropped.shape[1] and 0 < poi.y < cropped.shape[0]:
+                            refined_keypoint = Point(x_min + poi.x, y_min + poi.y)
+                            refined = True
 
-        return refined
+            if refined:
+                refined_keypoints[i] = refined_keypoint
 
+        assert(len(refined_keypoints) == 14)
+        return refined_keypoints
+
+
+    # Will remove all below later into a Renderer Object
     def draw_keypoints(self, image, keypoints):
         for i in range(0, len(keypoints), 2):
             x = int(keypoints[i])
