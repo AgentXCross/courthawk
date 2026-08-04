@@ -1,0 +1,64 @@
+POSE ESTIMATION FEATURES FOR XGBOOST
+
+NORMALIZATION
+All landmark coordinates are normalized before any feature is computed:
+  1. Translation: subtract the mid-hip point from every landmark so the
+     body center sits at (0, 0). Makes features position-invariant
+     (it doesn't matter where in the frame the player is.)
+  2. Scale: divide every coordinate by the torso height (distance from
+     mid-hip to mid-shoulder). Makes features scale-invariant (it doesn't
+     matter how close the player is to the camera or how tightly the image
+     is cropped.)
+
+FEATURES
+All 15 features are handedness-agnostic (no left/right assumptions).
+"More/less extended arm" = arm with greater/lesser shoulder to wrist distance.
+
+1.  Max wrist height
+    Higher of the two wrists relative to mid-shoulder.
+
+2.  Vertical wrist separation
+    Absolute difference in wrist y-positions.
+
+3.  Horizontal wrist separation
+    Absolute difference in wrist x-positions.
+
+4.  More extended arm elbow angle
+    Elbow angle (shoulder to elbow to wrist) of the arm with greater shoulder to wrist distance.
+
+5.  Less extended arm elbow angle
+    Elbow angle of the non-hitting arm.
+
+6.  Arm extension asymmetry
+    Absolute difference in shoulder to wrist distance between the two arms.
+
+7.  Shoulder rotation angle
+    Angle of the shoulder line (L shoulder to R shoulder) from horizontal.
+
+8.  Hip rotation angle
+    Angle of the hip line from horizontal.
+
+9.  Hip-shoulder twist
+    Shoulder rotation angle minus hip rotation angle.
+
+10. Torso lean
+    Angle of the mid-shoulder to mid-hip axis from vertical.
+
+11. Wrist x-coordinate product
+    Left wrist x multiplied by right wrist x (after mid-hip centering).
+
+12. Min cross-body shoulder-to-wrist distance
+    min( dist(L_wrist, R_shoulder), dist(R_wrist, L_shoulder) ).
+
+13. Angle between forearm vectors
+    Angle between (L_elbow to L_wrist) and (R_elbow to R_wrist).
+
+14. Elbow angle difference
+    Absolute difference between left and right elbow angles.
+
+15. Wrist average height minus elbow average height
+    (avg wrist y) - (avg elbow y), sign-flipped so positive = wrists above elbows.
+
+16. Legs crossed (0 or 1)
+    1 if the knee x-ordering is opposite to the hip x-ordering, meaning the knees
+    have crossed the body midline.
