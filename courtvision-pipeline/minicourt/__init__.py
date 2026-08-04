@@ -1,1 +1,0 @@
-from .minicourt import MiniCourt

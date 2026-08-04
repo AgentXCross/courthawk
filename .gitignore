@@ -6,12 +6,12 @@ venv
 # YOLO, Keypoints Model, XGBoost for Shot Classification
 models
 
-courtvision-pipeline/training/data
-courtvision-pipeline/training/tennis-ball-detection-6
-courtvision-pipeline/training/tennis_court_det_dataset.zip
-courtvision-pipeline/training/keypoints_model.pt
+courtvision-engine/training/data
+courtvision-engine/training/tennis-ball-detection-6
+courtvision-engine/training/tennis_court_det_dataset.zip
+courtvision-engine/training/keypoints_model.pt
 
-pose_estimation/data
+courtvision-engine/pose_estimation/data
 
 __pycache__
 .DS_Store
