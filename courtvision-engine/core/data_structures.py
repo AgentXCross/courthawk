@@ -58,17 +58,20 @@ class BoundingBox:
     tl: Point # top left: (x1, y1)
     br: Point # bottom right: (x2, y2)
 
+
     @property
     def center(self) -> Point:
         center_x = (self.tl.x + self.br.x) / 2
         center_y = (self.tl.y + self.br.y) / 2
         return Point(center_x, center_y)
 
+
     @property
     def foot(self) -> Point:
         center_x = (self.tl.x + self.br.x) / 2
         bottom_y = max(self.tl.y, self.br.y)
         return Point(center_x, bottom_y)
+
 
     @property
     def height(self) -> float:

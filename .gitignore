@@ -1,17 +1,21 @@
+# Virtual Environment
 venv
 
 # Environment Variables
 .env
 
-# YOLO, Keypoints Model, XGBoost for Shot Classification
+# YOLO, Keypoints Model, XGBoost for Shot Type Classification
 models
 
+# Keypoints Data, Tennis Ball Detection Data
 courtvision-engine/training/data
 courtvision-engine/training/tennis-ball-detection-6
 courtvision-engine/training/tennis_court_det_dataset.zip
 courtvision-engine/training/keypoints_model.pt
 
+# Pose Estimation Data
 courtvision-engine/pose_estimation/data
 
+# MacOS
 __pycache__
 .DS_Store

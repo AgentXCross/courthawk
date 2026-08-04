@@ -14,7 +14,7 @@ Given a raw match video from the standard angle, the pipeline:
 5. Computes ball speed and player movement speed
 6. Renders all of the above back onto the original video
 
-## Models
+## Machine Learning Models
 
 | Model | Purpose |
 |---|---|
