@@ -1,4 +1,9 @@
-"""Bounding Box and Point dataclass definitions and utility functions.""" 
+"""
+Data structures and their utility functions.
+- Point
+- Line
+- BoundingBox
+""" 
 
 from __future__ import annotations
 
@@ -35,6 +40,17 @@ class Point:
             x = self.x / scalar,
             y = self.y / scalar,
         )
+
+
+@dataclass(frozen = True)
+class Line:
+    """A Line is defined by 2 Points representing its endpoints."""
+    # One end of the line
+    end_1: Point
+
+    # Other end of the line
+    end_2: Point
+
 
 @dataclass(frozen = True)
 class BoundingBox:

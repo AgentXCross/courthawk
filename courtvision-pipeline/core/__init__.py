@@ -1,5 +1,5 @@
 from .video import Video
-from .bbox_and_point import (
+from .data_structures import (
     Point, 
     BoundingBox,
     euclidean_distance,
