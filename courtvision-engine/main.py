@@ -1,5 +1,5 @@
 from trackers import PlayerTracker, BallTracker
-from court_line_detector import CourtLineDetector
+from court_keypoint_detector import CourtKeypointDetector
 from minicourt import MiniCourt
 from pose_estimation import PoseEstimator, ShotClassifier
 
