@@ -18,6 +18,7 @@ import numpy as np
 from scipy.signal import find_peaks
 
 from core import (
+    Point,
     BoundingBox,
     euclidean_distance
 )
@@ -84,12 +85,12 @@ class BallTracker:
 
         Retuns a list of BoundingBox with no None values.
         """
-        ball_positions_as_list: list[tuple[float, float, float, float]] = 
-            [(bbox.tl.x, bbox.tl.y, bbox.br.x, bbox.br.y) 
-             if bbox is not None
-             else (None, None, None, None)
-             for bbox in ball_positions
-             ]
+        ball_positions_as_list: list[tuple[float, float, float, float]] = [
+            (bbox.tl.x, bbox.tl.y, bbox.br.x, bbox.br.y) 
+            if bbox is not None
+            else (None, None, None, None)
+            for bbox in ball_positions
+        ]
         assert len(ball_positions) == len(ball_positions_as_list)
 
         df_ball_positions = pd.DataFrame(ball_positions_as_list, columns = ["x1", "y1", "x2", "y2"])
