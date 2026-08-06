@@ -1,9 +1,14 @@
 import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision as mp_vision
+
 import cv2
 import numpy as np
 from PIL import Image
+
+import random
+from collections import Counter
+
 
 MODEL_PATH = 'models/pose_landmarker.task'
 
@@ -171,8 +176,6 @@ class PoseEstimator:
         Returns 'unknown' only if no pose is detected in any of the 7 frames.
         Ties are broken randomly.
         """
-        import random
-        from collections import Counter
 
         n = len(video_frames)
         shot_types = []

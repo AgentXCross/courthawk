@@ -1,49 +1,111 @@
+"""
+PlayerTracker class.
+
+Tracks the players using a YOLO model. 
+Filters the identified people for the 2 players. 
+Players are stored as BoundingBox objects.
+"""
+
 from ultralytics import YOLO
-import cv2
+
 import pickle
-from core import measure_distance, get_center_bbox
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+from core import (
+    BoundingBox,
+    Point,
+    euclidean_distance
+)
+
 
 class PlayerTracker:
-    def __init__(self, model_path):
-        self.model = YOLO(model_path)
+    """
+    Tracks players over the frames of the video.
 
-    def choose_and_filter_players(self, court_keypoints, player_detections):
-        player_detections_first_frame = player_detections[0]
-        chosen_players = self.choose_players(court_keypoints, player_detections_first_frame)
-        filtered_player_detections = []
+    detect_frames() should be run first. It runs the YOLO model on all frames 
+    and only tracks the "person" class. 
+
+    choose_and_filter_players() should be run after. It requires the court keypoints.
+    """
+    def __init__(self, model_path: Path):
+        self.model: YOLO = YOLO(model_path)
+
+
+    def choose_and_filter_players(
+            self, 
+            court_keypoints: list[Point], 
+            player_detections: list[dict[int, BoundingBox]] # one dict per frame mapping track ID to their BoundingBox
+        ) -> tuple[list[dict[int, BoundingBox]], list[int]]:
+        """
+        Chooses the players on the first frame. Calls choose_players.
+
+        Filters and returns the player_detections dict, only keeping the indices of the chosen players.
+        Also returns the indices of the chosen players.
+        """
+        player_detections_first_frame: dict[int, BoundingBox] = player_detections[0]
+        chosen_players: list[int] = self.choose_players(court_keypoints, player_detections_first_frame)
+
+        filtered_player_detections: list[dict[int, BoundingBox]] = []
+
         for player_dict in player_detections:
             filtered_player_dict = {track_id: bbox for track_id, bbox in player_dict.items() if track_id in chosen_players}
             filtered_player_detections.append(filtered_player_dict)
-        return filtered_player_detections
 
-    def choose_players(self, court_keypoints, player_dict):
-        distances = []
+        return filtered_player_detections, chosen_players
+
+
+    def choose_players(
+            self, 
+            court_keypoints: list[Point], 
+            player_dict: dict[int, BoundingBox]
+        ):
+        """
+        Filters for the 2 players. The players are chosen by calculating distance
+        between every person and the nearest 3 court_keypoints. 
+        
+        Returns the indices of the 2 selected players.
+        """
+        distances: list[tuple[int, float]] = []
         for track_id, bbox in player_dict.items():
-            player_center = get_center_bbox(bbox)
+            player_center = bbox.center
 
             # Calculate distance from each person to all the court keypoints
             dists = []
-            for i in range(0, len(court_keypoints), 2):
-                court_keypoint = (court_keypoints[i], court_keypoints[i + 1])
-                dist = measure_distance(player_center, court_keypoint)
+            for keypoint in court_keypoints:
+                dist = euclidean_distance(player_center, keypoint)
                 dists.append(dist)
             
             # Sort and then take the average of the smallest 3 values
             dists.sort()
-            avg_dist = sum(dists[:3]) / 3
+            avg_dist_of_min_3 = float(sum(dists[:3]) / 3)
 
-            distances.append((track_id, avg_dist))
-        # Sort and then take the smallest 2 values who are the players
+            distances.append((track_id, avg_dist_of_min_3))
+
+        # Sort and then take the smallest 2 values who we choose as the player
         distances.sort(key = lambda x: x[1])
         chosen_players = [distances[0][0], distances[1][0]]
         return chosen_players
 
-    def detect_frames(self, frames, read_from_stub = False, stub_path = None):
+
+    def detect_frames(
+            self, 
+            frames: list[np.ndarray],
+            read_from_stub: bool = False, 
+            stub_path: Path | None = None
+        ) -> list[dict[int, BoundingBox]]:
+        """
+        Runs detect_frame() on all the frames. Returns a list of dicts that map
+        a tracking index to a its BoundingBox. 
+        """
         player_detections = []
         
         if read_from_stub and stub_path is not None:
             with open(stub_path, 'rb') as f:
                 player_detections = pickle.load(f)
+            assert len(player_detections) == len(frames)
             return player_detections
 
         for frame in frames:
@@ -53,24 +115,33 @@ class PlayerTracker:
         if stub_path is not None:
             with open(stub_path, 'wb') as f:
                 pickle.dump(player_detections, f)
-        
-        return player_detections
-    
-    def detect_frame(self, frame):
-        results = self.model.track(frame, persist = True)[0]
-        id_name_dict = results.names
 
-        player_dict = {}
+        assert len(player_detections) == len(frames)
+        return player_detections
+
+    
+    def detect_frame(self, frame: np.ndarray) -> dict[int, BoundingBox]:
+        """
+        Runs YOLO model to detect person position on a single frame.
+        Returns as a dict mapping track index to BoundingBox.
+        """
+        results = self.model.track(frame, persist = True, classes = [0])[0] # class 0 is "person"
+
+        player_dict: dict[int, BoundingBox] = {}
+
         for box in results.boxes:
             track_id = int(box.id.tolist()[0])
-            result = box.xyxy.tolist()[0]
-            object_class_id = box.cls.tolist()[0]
-            object_class_name = id_name_dict[object_class_id]
-            if object_class_name == "person":
-                player_dict[track_id] = result
-            
+            x1, y1, x2, y2 = box.xyxy.tolist()[0]
+
+            bbox = BoundingBox(
+                Point(x1, y1), Point(x2, y2)
+            )
+            player_dict[track_id] = bbox
+
         return player_dict
 
+
+    # Will remove the draw 
     def draw_shot_types(self, video_frames, player_detections, ball_shot_frames, shot_types, hitting_player_ids):
         active = {}  # frame_num -> (player_id, shot_type)
         for shot_frame, shot_type, player_id in zip(ball_shot_frames, shot_types, hitting_player_ids):

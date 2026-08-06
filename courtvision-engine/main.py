@@ -1,20 +1,26 @@
+"""
+This script is primarily for testing. It runs an image through the entire 
+pipeline and produces the output video. This file should not be accessed
+by the frontend or backend folders.
+"""
+
 from trackers import PlayerTracker, BallTracker
 from court_keypoint_detector import CourtKeypointDetector
 from minicourt import MiniCourt
 from pose_estimation import PoseEstimator, ShotClassifier
-
 from core import Video
 
 import cv2
 
+
 def main():
     # Read Video
     input_video_path = "input-videos/sinner_zverev.mp4"
-    video = Video.read_video(input_video_path)
+    video = Video.read_video(input_video_path) 
 
     # Detect and Track: Players and Ball
-    player_tracker = PlayerTracker(model_path = "models/yolov8x.pt")
-    ball_tracker = BallTracker(model_path = "models/yolo5_last.pt")
+    player_tracker = PlayerTracker(model_path = "models/yolov8x_player_tracker.pt")
+    ball_tracker = BallTracker(model_path = "models/yolo5_ball_detector.pt")
     player_detections = player_tracker.detect_frames(
         video.frames,
         read_from_stub = False,
@@ -30,7 +36,7 @@ def main():
 
     # Detect Court Keypoints
     court_model_path = "models/keypoints_model.pt"
-    court_line_detector = CourtLineDetector(court_model_path)
+    court_line_detector = CourtKeypointDetector(court_model_path)
     ## court_keypoints is a list of 28 values
     ## Every 2 values corresponds to one keypoint on the court
     n = len(video.frames)
@@ -42,8 +48,7 @@ def main():
     ## player_detections is a list of dictionaries
     ## player_ids is a tuple with 2 elements representing the ids of the 2 players
     ## Each dictionairy corresponds to a frame, player_id's are the keys
-    player_detections = player_tracker.choose_and_filter_players(court_keypoints, player_detections)
-    player_ids = player_detections[0].keys()
+    player_detections, player_ids = player_tracker.choose_and_filter_players(court_keypoints, player_detections)
 
     # Mini-Court
     mini_court = MiniCourt(video.frames[0])

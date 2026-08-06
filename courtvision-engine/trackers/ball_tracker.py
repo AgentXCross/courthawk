@@ -6,7 +6,6 @@ Also handles determining when a ball is hit by a player.
 The ball is primarily stored as a BoundingBox object.
 """
 
-
 from ultralytics import YOLO
 
 import pickle
@@ -25,8 +24,18 @@ from core import (
 
 
 class BallTracker:
+    """
+    Tracks the ball over the frames of the video.
+
+    detect_frames() runs the YOLO model to detect the tennis ball.
+
+    interpolate_ball_positions() is used to fill in gaps on frames where YOLO
+    failed to identify the location of the tennis ball.
+
+    get_ball_shot_frames() determines during which frames the ball was hit by a player.
+    """
     def __init__(self, model_path: Path):
-        self.model = YOLO(model_path)
+        self.model: YOLO = YOLO(model_path)
 
 
     def detect_frames(
