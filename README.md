@@ -1,12 +1,14 @@
-# CourtHawk: Computer Vision for Tennis Analytics
+# CourtHawk: Tennis Player and Ball Tracking
+
+#### Currently restructuring the codebase to be more readable and maintainable. Also building a front and backend.
 
 ![Demo](courthawk_engine/data/output_videos/sinner_zverev_output.gif)
 
-CourtHawk is a computer vision system for analyzing tennis footage, tracking players and the ball, detecting and classifying shot types, and overlaying stats on a mini-court diagram.
+CourtHawk is a computer vision system for analyzing tennis footage from the standard TV angle, tracking players and the ball, detecting and classifying shot types, and overlaying stats on a mini-court diagram.
 
-## Overview
+## Project Overview
 
-Given a raw match video from the standard angle, the pipeline:
+Given a match video (currently only serves individual points) from the standard angle, the pipeline:
 1. Detects and tracks both players and the ball across every frame
 2. Identifies court keypoints and maps the court to a mini-court view
 3. Detects frames where the ball is struck
@@ -14,14 +16,14 @@ Given a raw match video from the standard angle, the pipeline:
 5. Computes ball speed and player movement speed
 6. Renders all of the above back onto the original video
 
-## Machine Learning Models
+## ML Models and their Purpose
 
 | Model | Purpose |
 |---|---|
 | YOLOv8x | Detects and tracks players frame-by-frame. |
-| YOLOv5 (fine-tuned) | Detects the tennis ball (fine-tuned on tennis ball dataset). Results are not perfect due to the high speed of the ball. |
-| ResNet-18 Court Keypoint Model (find-tuned) | Predicts 14 court keypoints used to build the homography for the mini-court. |
-| MediaPipe Pose Landmarker | Estimates 33-point body pose on cropped player images. Results are not perfect due to the low quality of the video and high speed of player movements |
+| YOLOv5 (fine-tuned) | Detects the tennis ball (fine-tuned on tennis ball dataset). Results are not perfect due to the high speed of the ball. Considering replacing with a heat-map model. |
+| ResNet-18 (find-tuned) | Predicts 14 court keypoints used to build the homography for the mini-court. |
+| MediaPipe Pose Landmarker | Estimates 33-point body pose on cropped player images. Results are not perfect due to the low quality of the video and high speed of player movements. Considering enchancing cropped images using AI image enchancing models. |
 | XGBoost Classifier | Classifies pose features into forehand / backhand / serve using outputs from MediaPipe Pose Landmarker. |
 
 ## Shot Classification
@@ -30,34 +32,24 @@ For each detected ball strike, the pipeline samples up to 7 frames (+ and - 3 ar
 
 See `pose_estimation/features.txt` for the full feature list.
 
-## File Structure (Not Updated Yet)
+## File Structure
 
 ```
-tennis-cv-analysis/
-├── main.py                          # Entry point: runs the whole system and produce outputs
+CourtHawk/
+├── courthawk_engine/
+│   ├── core/                        # Video I/O, Data Structures, Unit Conversions, Constants
+│   ├── court_keypoint_detector/     # Predicts and refines court keypoints
+│   ├── trackers/                    # YOLOv8 player tracking, YOLOv5 ball tracking
+│   ├── minicourt/                   # Mini-court overlay, homography, shot/speed stats
+│   ├── pose_estimation/             # MediaPipe pose extraction and XGBoost shot classification
+│   ├── renderer/                    # Draws tracking/stat overlays back onto the video
+│   ├── models/                      # Trained model weights (gitignored)
+│   ├── data/                        # Input/output videos and training data (gitignored, except input/output videos)
+│   ├── stubs/                       # Cached detection results (pickle) to skip re-inference for testing
+│   ├── development/                 # Notebooks used to build and prototype the pipeline
+│   ├── engine.py                    # Public API entry point used by the backend
+│   └── main.py                      # Standalone script to run the full pipeline for testing
 │
-├── trackers/
-│   ├── player_tracker.py            # YOLOv8 player detection, tracking, and bbox drawing
-│   └── ball_tracker.py              # YOLOv5 ball detection, interpolation, and shot frame detection
-│
-├── court_line_detector/
-│   └── court_line_detector.py       # Predicts court keypoints, refines with line intersection, averages across frames
-│
-├── court_dimension_constants/
-│   └── __init__.py                  # Real-world court dimensions in metres
-│
-├── minicourt/
-│   └── minicourt.py                 # Draws the mini-court overlay, computes homography, calculates shot and speed stats using movements in the mini-court
-│
-├── pose_estimation/
-│   ├── pose_estimator.py            # MediaPipe pose extraction, feature computation, shot classification with voting
-│   ├── shot_classifier.py           # Wrapper around the XGBoost pickle file for inference
-│   ├── features.txt                 # Documentation of all 16 pose features
-│   ├── train.ipynb                  # Trains the XGBoost shot classifier from labeled images
-│   ├── pose_test.ipynb              # Visualises MediaPipe pose detection on a single image
-│
-├── input-videos/                    # Raw input footage
-├── output-videos/                   # Output videos with overlay
-├── tracker_stubs/                   # Cached detection results (pickle) to skip re-inference
-└── training/                        # Training data and configs
+├── backend/                         # API layer (in progress)
+└── frontend/                        # UI layer (in progress)
 ```
