@@ -1,5 +1,5 @@
 """
-Entry point to the CourtVision engine.
+Entry point to the CourtHawk engine.
 
 This module exposes the public API used by the backend. The backend passes
 an input video to analyze_point(), which executes the full pipeline and returns 

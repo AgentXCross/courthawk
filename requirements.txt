@@ -1,4 +1,4 @@
-# courtvision-pipeline
+# courthawk-engine
 numpy
 opencv-python
 torch
@@ -13,3 +13,10 @@ xgboost
 # backend
 fastapi
 uvicorn
+
+# development
+matplotlib
+python-dotenv
+roboflow
+certifi
+ipykernel

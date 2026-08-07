@@ -1,44 +1,55 @@
+"""
+MiniCourt class.
+"""
+
 import cv2
+import numpy as np
+
 from core import (
     convert_pixel_distance_to_meters, 
     convert_meters_to_pixel_distance,
-    get_foot_position,
-    get_closest_keypoint_index,
-    get_height_of_bbox,
-    measure_xy_distance,
-    get_center_bbox,
-    measure_distance
+    measure_offset,
+    euclidean_distance,
+    constants
 )
-import court_dimension_constants
-import numpy as np
 
-class MiniCourt():
+
+class MiniCourt:
+    """
+    Determine the coordinates of where to place the mini-court.
+    Calculates the coordinate transforms that convert a point of the real court to 
+    the mini-court.
+    Computes shot and player speed stats.
+    """
     def __init__(self, frame):
-        self.rectangle_width = 380
-        self.rectangle_height = 720
-        self.buffer = 10
-        self.padding_court = 60
+        self.rectangle_width = 380 # Width of the mini-court
+        self.rectangle_height = 720 # Length of the mini-court
+        self.buffer = 10 # Between the entire mini-court and the edge of the video
+        self.padding_court = 60 # At ends of the baseline and on sides of the court
 
         self.set_canvas_background_box_position(frame)
         self.set_mini_court_position()
         self.set_court_keypoints()
         self.set_court_lines()
 
-    def convert_meters_to_pixels(self, meters):
+
+    def convert_meters_to_pixels(self, meters: float) -> float:
+        """Scales real life tennis court distances in meters to the mini-courts own pixel space."""
         return convert_meters_to_pixel_distance(
             meters,
-            court_dimension_constants.DOUBLE_LINE_WIDTH,
+            constants.DOUBLE_LINE_WIDTH,
             self.court_width
         )
 
-    def convert_pixels_to_meters(self, pixels):
+
+    def convert_pixels_to_meters(self, pixels: float) -> float:
         return convert_pixel_distance_to_meters(
             pixels,
-            court_dimension_constants.DOUBLE_LINE_WIDTH,
+            constants.DOUBLE_LINE_WIDTH,
             self.court_width
         )
 
-    def set_court_keypoints(self):
+    def set_court_keypoints(self) -> None:
         drawing_key_points = [0] * 28
         # point 0: Doubles top left
         drawing_key_points[0], drawing_key_points[1] = int(self.court_start_x), int(self.court_start_y)
@@ -80,6 +91,7 @@ class MiniCourt():
         # point 13: Mini-Court bottom center
         drawing_key_points[26] = (drawing_key_points[20] + drawing_key_points[22]) // 2
         drawing_key_points[27] = drawing_key_points[21]
+
         self.drawing_key_points = drawing_key_points
     
     def set_court_lines(self):
