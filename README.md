@@ -1,6 +1,6 @@
 # CourtHawk: Computer Vision for Tennis Analytics
 
-![Demo](courthawk-engine/data/output_videos/sinner_zverev_output.gif)
+![Demo](courthawk_engine/data/output_videos/sinner_zverev_output.gif)
 
 CourtHawk is a computer vision system for analyzing tennis footage, tracking players and the ball, detecting and classifying shot types, and overlaying stats on a mini-court diagram.
 

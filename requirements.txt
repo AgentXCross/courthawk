@@ -1,4 +1,4 @@
-# courthawk-engine
+# courthawk_engine
 numpy
 opencv-python
 torch
