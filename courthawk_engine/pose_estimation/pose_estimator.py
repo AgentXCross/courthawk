@@ -1,3 +1,8 @@
+"""
+
+"""
+
+
 import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision as mp_vision
@@ -8,32 +13,42 @@ from PIL import Image
 
 import random
 from collections import Counter
+from pathlib import Path
+
+from core import (
+    Point,
+    BoundingBox,
+    Line
+)
+from shot_classifier import ShotClassifier
 
 
-MODEL_PATH = 'models/pose_landmarker.task'
-
-def _angle(a, b, c):
+def _angle(a: Point, b: Point, c: Point):
     """Angle in degrees at point b in the triangle a-b-c."""
     ba = a - b
     bc = c - b
     cos_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc) + 1e-6)
     return np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
 
-def _vec_angle(v1, v2):
+
+def _vec_angle(v1: Point, v2: Point):
     """Angle in degrees between two vectors."""
     cos_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
     return np.degrees(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
 
-def _line_angle(p1, p2):
+
+def _line_angle(p1: Point, p2: Point):
     """Angle in degrees of the line p1 to p2 from horizontal."""
     return np.degrees(np.arctan2(p2[1] - p1[1], p2[0] - p1[0]))
 
-def _apply_clahe(img_rgb):
+
+def _apply_clahe(img_rgb: np.ndarray):
     """Boost local contrast via CLAHE on the L channel in LAB space."""
     lab = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2LAB)
     clahe = cv2.createCLAHE(clipLimit = 3.0, tileGridSize = (2, 2))
     lab[:, :, 0] = clahe.apply(lab[:, :, 0])
     return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
 
 class PoseEstimator:
     # MediaPipe landmark indices
@@ -43,7 +58,7 @@ class PoseEstimator:
     L_HIP, R_HIP = 23, 24
     L_KNEE, R_KNEE = 25, 26
 
-    def __init__(self, model_path = MODEL_PATH):
+    def __init__(self, model_path: Path):
         base_options = mp_python.BaseOptions(model_asset_path = model_path)
         options = mp_vision.PoseLandmarkerOptions(base_options = base_options)
         self.landmarker = mp_vision.PoseLandmarker.create_from_options(options)
@@ -169,14 +184,24 @@ class PoseEstimator:
             legs_crossed,       # 16
         ], dtype = np.float32)
 
-    def classify_shots(self, video_frames, ball_shot_frames, player_detections, ball_detections, classifier):
+
+    def classify_shots(
+            self, 
+            video_frames: list[np.ndarray], 
+            ball_shot_frames: list[int], 
+            player_bbox_detections: list[dict[int, BoundingBox]], 
+            ball_bbox_detections: list[BoundingBox], 
+            classifier: ShotClassifier
+        ):
         """
         For each ball hit frame, samples up to 7 frames (frame - 3 to frame + 3), crops the hitting
         player, runs pose estimation on each crop, and majority-votes the shot type.
+
         Returns 'unknown' only if no pose is detected in any of the 7 frames.
         Ties are broken randomly.
         """
-
+        assert len(player_bbox_detections) == len(ball_bbox_detections) and len(video_frames) == len(player_bbox_detections)
+        
         n = len(video_frames)
         shot_types = []
         hitting_player_ids = []

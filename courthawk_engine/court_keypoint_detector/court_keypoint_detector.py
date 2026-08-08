@@ -319,27 +319,3 @@ class CourtKeypointDetector:
 
         assert(len(refined_keypoints) == 14)
         return refined_keypoints
-
-
-    # Will remove all below later into a Renderer Object
-    def draw_keypoints(self, image, keypoints):
-        for i in range(0, len(keypoints), 2):
-            x = int(keypoints[i])
-            y = int(keypoints[i + 1])
-            cv2.putText(
-                image,
-                str(i // 2), (x, y - 10),
-                cv2.FONT_HERSHEY_TRIPLEX,
-                1,
-                (1, 255, 214),
-                2
-            )
-            cv2.circle(image, (x, y), 10, (1, 255, 214), -1)
-        return image
-
-    def draw_keypoints_on_video(self, video_frames, keypoints):
-        output_frames = []
-        for frame in video_frames:
-            frame = self.draw_keypoints(frame, keypoints)
-            output_frames.append(frame)
-        return output_frames

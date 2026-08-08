@@ -210,22 +210,3 @@ class BallTracker:
 
         return peaks.tolist()
 
-
-    # Will remove this function later, put in Renderer
-    def draw_bboxes(self, video_frames, ball_detections):
-        output_video_frames = []
-        for frame, bbox in zip(video_frames, ball_detections):
-            if bbox:
-                x1, y1, x2, y2 = bbox
-                cv2.putText(
-                    frame,
-                    "Ball", (int(x1), int(y1 - 10)),
-                    cv2.FONT_HERSHEY_TRIPLEX,
-                    0.9,
-                    (1, 255, 214),
-                    2
-                )
-                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (1, 255, 214), 2)
-            output_video_frames.append(frame)
-        return output_video_frames
-

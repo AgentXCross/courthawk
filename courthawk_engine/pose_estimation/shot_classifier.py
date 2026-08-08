@@ -1,16 +1,30 @@
+"""Runs the shot classification model."""
+
+
 import pickle
 import numpy as np
+from pathlib import Path
 
-CLASSES = ['backhand', 'forehand', 'serve']
+from enum import Enum
+
+
+class ShotType(Enum):
+    SERVE = "serve"
+    FOREHAND = "forehand"
+    BACKHAND = "backhand"
+
+
+_CLASSES = (ShotType.BACKHAND, ShotType.FOREHAND, ShotType.SERVE)
+
 
 class ShotClassifier:
-    def __init__(self, model_path):
+    """Wraps the trained XGBoost shot classifier."""
+    def __init__(self, model_path: Path):
         with open(model_path, 'rb') as f:
             self.model = pickle.load(f)
 
-    def predict(self, keypoints):
-        """
-        Predicts the shot type from a 66-feature normalized keypoint vector.
-        Returns a string: 'forehand', 'backhand', or 'serve'.
-        """
-        return CLASSES[self.model.predict(np.array(keypoints).reshape(1, -1))[0]]
+
+    def predict(self, features: np.ndarray) -> ShotType:
+        """Predicts the shot type from a 16-feature normalized pose feature vector."""
+        class_index = self.model.predict(np.array(features).reshape(1, -1))[0]
+        return _CLASSES[class_index]

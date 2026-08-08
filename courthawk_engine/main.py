@@ -4,11 +4,17 @@ pipeline and produces the output video. This file should not be accessed
 by the frontend or backend folders.
 """
 
-from trackers import PlayerTracker, BallTracker
+from core import (
+    Video,
+    Point,
+    Line,
+    BoundingBox
+)
 from court_keypoint_detector import CourtKeypointDetector
 from minicourt import MiniCourt
-from pose_estimation import PoseEstimator, ShotClassifier
-from core import Video
+from pose_estimation import PoseEstimator, ShotClassifier, ShotType
+from renderer import Renderer
+from trackers import PlayerTracker, BallTracker
 
 import cv2
 
