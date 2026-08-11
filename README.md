@@ -58,38 +58,30 @@ The minicourt provides a bird-eye's view of the point. The player and ball posit
 
 We first extract the foot position of the players and the center position of the ball on the actual court. To translate the positions onto minicourt, we calculate the homography. The homography is a matrix $H \in \mathbb{R}^{3 \times 3}$ that maps points from the original image plane to corresponding points on the mini-court plane. The homography requires at least 4 points to calculate as it has 8 degrees of freedom.
 
-$$
-\left[
-\begin{array}{c}
+```math
+\begin{bmatrix}
 x_{\text{mini}} \\
 y_{\text{mini}} \\
 1
-\end{array}
-\right]
+\end{bmatrix}
 \sim
-\left[
-\begin{array}{c}
+\begin{bmatrix}
 x' \\
 y' \\
 z'
-\end{array}
-\right]
+\end{bmatrix}
 =
-\left[
-\begin{array}{ccc}
+\begin{bmatrix}
 h_1 & h_2 & h_3 \\
 h_4 & h_5 & h_6 \\
 h_7 & h_8 & h_9
-\end{array}
-\right]
-\left[
-\begin{array}{c}
+\end{bmatrix}
+\begin{bmatrix}
 x \\
 y \\
 1
-\end{array}
-\right]
-$$
+\end{bmatrix}
+```
 
 ### Shot Detection
 
