@@ -9,7 +9,6 @@ from pathlib import Path
 from core import (
     Video,
     Point,
-    Line,
     BoundingBox
 )
 from court_keypoint_detector import CourtKeypointDetector
@@ -77,7 +76,7 @@ def main():
 
     # Draw Outputs
     renderer = Renderer()
-    output_video_frames = renderer.render(
+    output_video_frames: list[np.ndarray] = renderer.render(
         video.frames,
         court_keypoints,
         player_detections,

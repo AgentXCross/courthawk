@@ -19,7 +19,7 @@ from core import (
     BoundingBox,
     Line
 )
-from .shot_classifier import ShotClassifier
+from .shot_classifier import ShotClassifier, ShotType
 
 
 def _dot_product(u: Point, v: Point) -> float:
@@ -110,7 +110,7 @@ class PoseEstimator:
 
     def get_keypoints(self, frame: np.ndarray | str) -> np.ndarray | None:
         """
-        Runs MediaPipe pose estimator on a frame and returns a 16-feature vector for shot
+        Runs MediaPipe pose estimator on a frame and returns a feature vector for shot
         classification. 
         
         Returns None if no pose is detected.
@@ -165,70 +165,78 @@ class PoseEstimator:
         r_elbow_angle: float = _angle(right_shoulder, right_elbow, right_wrist)
 
         # 1. Max wrist height relative to mid-shoulder
-        max_wrist_height = max(-(lw.y - mid_s.y), -(rw.y - mid_s.y))
+        max_wrist_height = max(-(left_wrist.y - mid_shoulder.y), -(right_wrist.y - mid_shoulder.y))
 
         # 2. Vertical wrist separation
-        vert_wrist_sep = abs(lw.y - rw.y)
+        vert_wrist_sep = abs(left_wrist.y - right_wrist.y)
 
         # 3. Horizontal wrist separation
-        horiz_wrist_sep = abs(lw.x - rw.x)
+        horiz_wrist_sep = abs(left_wrist.x - right_wrist.x)
 
         # 4 & 5. More/less extended arm elbow angles
-        if l_ext >= r_ext:
-            more_ext_elbow, less_ext_elbow = l_elbow_angle, r_elbow_angle
+        if left_extension >= right_extension:
+            more_extended_elbow, less_extended_elbow = l_elbow_angle, r_elbow_angle
         else:
-            more_ext_elbow, less_ext_elbow = r_elbow_angle, l_elbow_angle
+            more_extended_elbow, less_extended_elbow = r_elbow_angle, l_elbow_angle
 
         # 6. Arm extension asymmetry
-        ext_asymmetry = abs(l_ext - r_ext)
+        ext_asymmetry = abs(left_extension - right_extension)
 
         # 7. Shoulder rotation angle
-        shoulder_angle = _line_angle(ls, rs)
+        shoulder_angle = _line_angle(left_shoulder, right_shoulder)
 
         # 8. Hip rotation angle
-        hip_angle = _line_angle(lh, rh)
+        hip_angle = _line_angle(left_hip, right_hip)
 
         # 9. Hip-shoulder twist
         twist = shoulder_angle - hip_angle
 
         # 10. Torso lean (angle of spine from vertical, mid_hip is at origin)
-        torso_lean = np.degrees(np.arctan2(mid_s.x, -mid_s.y))
+        torso_lean = np.degrees(np.arctan2(mid_shoulder.x, -mid_shoulder.y))
 
         # 11. Wrist x-coordinate product
-        wrist_product = float(lw.x) * float(rw.x)
+        wrist_product = float(left_wrist.x) * float(right_wrist.x)
 
         # 12. Min cross-body shoulder-to-wrist distance
-        cross_dist = min(_norm(lw - rs), _norm(rw - ls))
+        cross_dist = min(_norm(left_wrist - right_shoulder), _norm(right_wrist - left_shoulder))
 
         # 13. Angle between forearm vectors
-        forearm_angle = _vec_angle(lw - le, rw - re)
+        forearm_angle = _vec_angle(left_wrist - left_elbow, right_wrist - right_elbow)
 
         # 14. Elbow angle difference
         elbow_angle_diff = abs(l_elbow_angle - r_elbow_angle)
 
         # 15. Average wrist height minus average elbow height
-        wrist_vs_elbow = -((lw.y + rw.y) / 2 - (le.y + re.y) / 2)
+        wrist_vs_elbow = -((left_wrist.y + right_wrist.y) / 2 - (left_elbow.y + right_elbow.y) / 2)
 
         # 16. Legs crossed: 1 if knee x-ordering is opposite to hip x-ordering
-        legs_crossed = float((lk.x - rk.x) * (lh.x - rh.x) < 0)
+        legs_crossed = float((left_knee.x - right_knee.x) * (left_hip.x - right_hip.x) < 0)
+
+        # 17. Right wrist offset
+        right_wrist_offset = (right_wrist.x - mid_shoulder.x) / _norm(right_shoulder - left_shoulder)
+
+        # 18. Left wrist offset
+        left_wrist_offset = (left_wrist.x - mid_shoulder.x) / _norm(right_shoulder - left_shoulder)
 
         return np.array([
-            max_wrist_height,   # 1
-            vert_wrist_sep,     # 2
-            horiz_wrist_sep,    # 3
-            more_ext_elbow,     # 4
-            less_ext_elbow,     # 5
-            ext_asymmetry,      # 6
-            shoulder_angle,     # 7
-            hip_angle,          # 8
-            twist,              # 9
-            torso_lean,         # 10
-            wrist_product,      # 11
-            cross_dist,         # 12
-            forearm_angle,      # 13
-            elbow_angle_diff,   # 14
-            wrist_vs_elbow,     # 15
-            legs_crossed,       # 16
+            max_wrist_height,       # 1
+            vert_wrist_sep,         # 2
+            horiz_wrist_sep,        # 3
+            more_extended_elbow,    # 4
+            less_extended_elbow,    # 5
+            ext_asymmetry,          # 6
+            shoulder_angle,         # 7
+            hip_angle,              # 8
+            twist,                  # 9
+            torso_lean,             # 10
+            wrist_product,          # 11
+            cross_dist,             # 12
+            forearm_angle,          # 13
+            elbow_angle_diff,       # 14
+            wrist_vs_elbow,         # 15
+            legs_crossed,           # 16
+            right_wrist_offset,     # 17
+            left_wrist_offset,      # 18
         ], dtype = np.float32)
 
 
@@ -239,54 +247,58 @@ class PoseEstimator:
             player_bbox_detections: list[dict[int, BoundingBox]], 
             ball_bbox_detections: list[BoundingBox], 
             classifier: ShotClassifier
-        ):
+        ) -> tuple[list[ShotType], list[int]]:
         """
         For each ball hit frame, samples up to 7 frames (frame - 3 to frame + 3), crops the hitting
         player, runs pose estimation on each crop, and majority-votes the shot type.
 
-        Returns 'unknown' only if no pose is detected in any of the 7 frames.
+        Returns ShotType.UNKNOWN only if no pose is detected in any of the 7 frames.
         Ties are broken randomly.
         """
         assert len(player_bbox_detections) == len(ball_bbox_detections) and len(video_frames) == len(player_bbox_detections)
         
-        n = len(video_frames)
-        shot_types = []
-        hitting_player_ids = []
+        num_frames = len(video_frames)
+        shot_types: list[ShotType] = []
+        hitting_player_ids: list[int] = []
 
         for frame_num in ball_shot_frames:
-            ball_box = ball_detections[frame_num]
-            ball_cx = (ball_box[0] + ball_box[2]) / 2
-            ball_cy = (ball_box[1] + ball_box[3]) / 2
+            ball_box = ball_bbox_detections[frame_num]
+            ball_center_x = (ball_box.tl.x + ball_box.br.x) / 2
+            ball_center_y = (ball_box.tl.y + ball_box.br.y) / 2
 
-            frame_players = player_detections[frame_num]
+            frame_players = player_bbox_detections[frame_num]
+
             hitting_player_id = min(
                 frame_players.keys(),
                 key = lambda pid: (
-                    ((frame_players[pid][0] + frame_players[pid][2]) / 2 - ball_cx) ** 2 +
-                    ((frame_players[pid][1] + frame_players[pid][3]) / 2 - ball_cy) ** 2
+                    ((frame_players[pid][0] + frame_players[pid][2]) / 2 - ball_center_x) ** 2 +
+                    ((frame_players[pid][1] + frame_players[pid][3]) / 2 - ball_center_y) ** 2
                 )
             )
             hitting_player_ids.append(hitting_player_id)
 
-            votes = []
-            for f in range(max(0, frame_num - 3), min(n, frame_num + 4)):
-                player_box = player_detections[f].get(hitting_player_id)
-                if player_box is None:
+            votes: list[ShotType | None] = []
+            for f in range(max(0, frame_num - 3), min(num_frames, frame_num + 4)):
+                player_bbox = player_bbox_detections[f].get(hitting_player_id)
+
+                if player_bbox is None:
                     continue
-                x1, y1, x2, y2 = int(player_box[0]), int(player_box[1]), int(player_box[2]), int(player_box[3])
-                crop = video_frames[f][max(0, y1):y2, max(0, x1):x2]
+
+                x1, y1, x2, y2 = int(player_bbox.tl.x), int(player_bbox.tl.y), int(player_bbox.br.x), int(player_bbox.br.y)
+                crop: np.ndarray = video_frames[f][max(0, y1):y2, max(0, x1):x2]
                 if crop.size == 0:
                     continue
+
                 keypoints = self.get_keypoints(crop)
                 if keypoints is not None:
                     votes.append(classifier.predict(keypoints))
 
             if not votes:
-                shot_types.append('unknown')
+                shot_types.append(ShotType.UNKNOWN)
             else:
                 count = Counter(votes)
                 max_count = max(count.values())
                 candidates = [s for s, c in count.items() if c == max_count]
-                shot_types.append(random.choice(candidates))
+                shot_types.append(random.choice(candidates)) # Only random when there is a tie
 
         return shot_types, hitting_player_ids

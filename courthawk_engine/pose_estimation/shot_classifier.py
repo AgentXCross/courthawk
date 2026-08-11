@@ -11,6 +11,7 @@ class ShotType(Enum):
     SERVE = "serve"
     FOREHAND = "forehand"
     BACKHAND = "backhand"
+    UNKNOWN = "unknown"
 
 
 _CLASSES = (ShotType.BACKHAND, ShotType.FOREHAND, ShotType.SERVE)
@@ -24,6 +25,6 @@ class ShotClassifier:
 
 
     def predict(self, features: np.ndarray) -> ShotType:
-        """Predicts the shot type from a 16-feature normalized pose feature vector."""
+        """Predicts the shot type from a normalized pose feature vector."""
         class_index = self.model.predict(np.array(features).reshape(1, -1))[0] # Required since model accepts and returns in batches
         return _CLASSES[class_index]
