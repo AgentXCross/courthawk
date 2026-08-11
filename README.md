@@ -6,7 +6,7 @@ Computer vision system for tennis that detects and tracks players and ball, esti
   <img src="courthawk_engine/data/output_videos/sinner_zverev_output.gif" width="70%">
 </p>
 
-## How It Works?
+## How It Works
 
 ### Input
 
