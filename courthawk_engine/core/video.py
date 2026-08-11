@@ -16,6 +16,7 @@ class Video:
 
     frames: list[np.ndarray]
     fps: float
+    num_frames: int
 
     @classmethod # This method can be called without an instance of the class
     def read_video(cls, video_path: Path) -> Video:
@@ -35,7 +36,8 @@ class Video:
     
         return cls(
             frames = frames,
-            fps = fps
+            fps = fps,
+            num_frames = len(frames)
         )
 
     def save_video(self, output_path: Path) -> None:
