@@ -62,6 +62,8 @@ class Renderer:
         video_frames = self.draw_ball_on_minicourt(video_frames, ball_point_detections_mini)
         video_frames = self.draw_stats(video_frames, player_shots_data, player_speeds_data, player_ids)
 
+        return video_frames
+
 
     def _draw_keypoints_on_image(self, image: np.ndarray, keypoints: list[Point]) -> np.ndarray:
         for i in range(len(keypoints)):

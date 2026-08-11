@@ -24,7 +24,7 @@ from .shot_classifier import ShotClassifier, ShotType
 
 def _dot_product(u: Point, v: Point) -> float:
     """Returns the dot product of 2 vectors."""
-    return u.x * v.x + u.y + v.y
+    return u.x * v.x + u.y * v.y
 
 
 def _norm(u: Point) -> float:
@@ -263,16 +263,15 @@ class PoseEstimator:
 
         for frame_num in ball_shot_frames:
             ball_box = ball_bbox_detections[frame_num]
-            ball_center_x = (ball_box.tl.x + ball_box.br.x) / 2
-            ball_center_y = (ball_box.tl.y + ball_box.br.y) / 2
+            ball_center = ball_box.center
 
             frame_players = player_bbox_detections[frame_num]
 
             hitting_player_id = min(
                 frame_players.keys(),
                 key = lambda pid: (
-                    ((frame_players[pid][0] + frame_players[pid][2]) / 2 - ball_center_x) ** 2 +
-                    ((frame_players[pid][1] + frame_players[pid][3]) / 2 - ball_center_y) ** 2
+                    (frame_players[pid].center.x - ball_center.x) ** 2 +
+                    (frame_players[pid].center.y - ball_center.y) ** 2
                 )
             )
             hitting_player_ids.append(hitting_player_id)
@@ -299,6 +298,6 @@ class PoseEstimator:
                 count = Counter(votes)
                 max_count = max(count.values())
                 candidates = [s for s, c in count.items() if c == max_count]
-                shot_types.append(random.choice(candidates)) # Only random when there is a tie
+                shot_types.append(random.choice(candidates)) # Only actually random when there is a tie
 
         return shot_types, hitting_player_ids

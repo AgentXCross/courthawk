@@ -22,12 +22,14 @@ import numpy as np
 
 
 def main():
-    input_video_path: Path = "input-videos/sinner_zverev.mp4"
+    input_video_path: Path = "data/input-videos/sinner_zverev.mp4"
     court_keypoints_model_path: Path = "models/keypoints_model.pt"
     player_tracker_model_path: Path = "models/yolov8x_player_tracker.pt"
     ball_tracker_model_path: Path = "models/yolo5_ball_detector.pt"
     pose_estimator_model_path: Path = "models/pose_landmarker.task"
     shot_classifier_model_path: Path = "models/shot_classifier.pkl"
+
+    PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
 
     video = Video.read_video(input_video_path) 
 
@@ -72,7 +74,7 @@ def main():
    
     player_shots_data: list[dict[str, int | float]] = mini_court.get_shot_stats(ball_shot_frames, player_mini_court_detections, ball_mini_court_detections, video.fps)
 
-    player_speed_stats: list[dict[str, int | float]] = mini_court.get_player_speed_stats(player_mini_court_detections, video.fps, 20)
+    player_speed_stats: list[dict[str, int | float]] = mini_court.get_player_speed_stats(player_mini_court_detections, video.fps, PLAYER_SPEED_STRIDE)
 
     # Draw Outputs
     renderer = Renderer()
@@ -95,8 +97,12 @@ def main():
     for i, frame in enumerate(output_video_frames): # draw frame number
         cv2.putText(frame, f"Frame #{i + 1}", (50, 170), cv2.FONT_HERSHEY_TRIPLEX, 2, (1, 255, 214), 5)
         
-    output_video = Video()
-    output_video.save_video("output-videos/sinner_zverev_output.avi")
+    output_video = Video(
+        frames = output_video_frames,
+        fps = video.fps,
+        num_frames = len(output_video_frames)
+    )
+    output_video.save_video("data/output-videos/sinner_zverev_output.avi")
 
 
 if __name__ == "__main__":

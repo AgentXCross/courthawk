@@ -283,6 +283,7 @@ class CourtKeypointDetector:
         Produces output to indicate if a replacement is made or not.
         """
         assert(len(keypoints) == 14)
+        
         refined_keypoints: list[Point] = keypoints.copy()
         img_height, img_width = image.shape[:2] # numpy arrays are row, col, channel
 
@@ -298,7 +299,7 @@ class CourtKeypointDetector:
 
             cropped = image[y_min:y_max, x_min:x_max]
             if cropped.size == 0: # Nothing was cropped out
-                print(f"Keypoint #{i}: Nothing cropped out around prediction")
+                print(f"Keypoint #{i}: Nothing cropped out around prediction.")
                 continue
 
             lines: list[Line] = _detect_lines(cropped)
@@ -316,6 +317,8 @@ class CourtKeypointDetector:
                 print(f"Keypoint #{i}: Successfully refined.")
             else:
                 print(f"Keypoint #{i}: Not refined. Original prediction holds.")
+
+        print("\n")
 
         assert(len(refined_keypoints) == 14)
         return refined_keypoints

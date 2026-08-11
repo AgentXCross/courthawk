@@ -1,4 +1,4 @@
-"""Runs the shot classification model."""
+"""Shot classification model wrapper."""
 
 import pickle
 import numpy as np

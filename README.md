@@ -2,6 +2,8 @@
 
 Computer vision system for tennis that detects and tracks players and ball, estimates player poses, classifies shots, detects court geometry, and projects movements onto a bird's-eye-view using homography.
 
+This project is inspired by [this tutorial](https://www.youtube.com/watch?v=L23oIHZE14w). It has since been substantially expanded and reworked, with significant improvements to the code structure, system architecture, and computer vision methods.
+
 <p align="center">
   <img src="courthawk_engine/data/output_videos/sinner_zverev_output.gif" width="70%">
 </p>
