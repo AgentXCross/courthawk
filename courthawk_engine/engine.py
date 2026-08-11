@@ -14,12 +14,11 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
-from trackers import PlayerTracker, BallTracker
-from court_keypoint_detector import CourtKeypointDetector
-from minicourt import MiniCourt
-from pose_estimation import PoseEstimator, ShotClassifier, ShotType
-from renderer import Renderer
-from core import (
+from .trackers import PlayerTracker, BallTracker
+from .court_keypoint_detector import CourtKeypointDetector
+from .pose_estimation import PoseEstimator, ShotClassifier, ShotType
+from .renderer import Renderer
+from .core import (
     Video,
     Point,
     BoundingBox,
@@ -28,8 +27,10 @@ from core import (
 )
 
 
-MODELS_DIR = Path("models")
-OUTPUT_DIR = Path("data/output_videos")
+# Anchor on this file's own location, so these paths still resolve correctly when engine.py is imported from elsewhere
+ENGINE_DIR = Path(__file__).resolve().parent
+MODELS_DIR = ENGINE_DIR / "models"
+OUTPUT_DIR = ENGINE_DIR / "data" / "output_videos"
 PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
 
 

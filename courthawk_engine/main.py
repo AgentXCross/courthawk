@@ -6,28 +6,33 @@ by the frontend or backend folders.
 
 from pathlib import Path
 
-from core import (
+from .core import (
     Video,
     Point,
     BoundingBox
 )
-from court_keypoint_detector import CourtKeypointDetector
-from minicourt import MiniCourt
-from pose_estimation import PoseEstimator, ShotClassifier, ShotType
-from renderer import Renderer
-from trackers import PlayerTracker, BallTracker
+from .court_keypoint_detector import CourtKeypointDetector
+from .minicourt import MiniCourt
+from .pose_estimation import PoseEstimator, ShotClassifier, ShotType
+from .renderer import Renderer
+from .trackers import PlayerTracker, BallTracker
 
 import cv2
 import numpy as np
 
 
+# Anchored on this file's own location
+ENGINE_DIR = Path(__file__).resolve().parent
+
+
 def main():
-    input_video_path: Path = "data/input-videos/sinner_zverev.mp4"
-    court_keypoints_model_path: Path = "models/keypoints_model.pt"
-    player_tracker_model_path: Path = "models/yolov8x_player_tracker.pt"
-    ball_tracker_model_path: Path = "models/yolo5_ball_detector.pt"
-    pose_estimator_model_path: Path = "models/pose_landmarker.task"
-    shot_classifier_model_path: Path = "models/shot_classifier.pkl"
+    input_video_path: Path = ENGINE_DIR / "data" / "input_videos" / "sinner_zverev.mp4"
+    court_keypoints_model_path: Path = ENGINE_DIR / "models" / "keypoints_model.pt"
+    player_tracker_model_path: Path = ENGINE_DIR / "models" / "yolov8x_player_tracker.pt"
+    ball_tracker_model_path: Path = ENGINE_DIR / "models" / "yolo5_ball_detector.pt"
+    pose_estimator_model_path: Path = ENGINE_DIR / "models" / "pose_landmarker.task"
+    shot_classifier_model_path: Path = ENGINE_DIR / "models" / "shot_classifier.pkl"
+    output_video_path: Path = ENGINE_DIR / "data" / "output_videos" / "sinner_zverev_output.avi"
 
     PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
 
@@ -102,7 +107,7 @@ def main():
         fps = video.fps,
         num_frames = len(output_video_frames)
     )
-    output_video.save_video("data/output-videos/sinner_zverev_output.avi")
+    output_video.save_video(output_video_path)
 
 
 if __name__ == "__main__":

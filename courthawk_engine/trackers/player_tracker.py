@@ -14,7 +14,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from core import (
+from ..core import (
     BoundingBox,
     Point,
     euclidean_distance

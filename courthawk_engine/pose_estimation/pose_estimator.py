@@ -14,7 +14,7 @@ import random
 from collections import Counter
 from pathlib import Path
 
-from core import (
+from ..core import (
     Point,
     BoundingBox,
     Line

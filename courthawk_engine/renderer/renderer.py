@@ -7,12 +7,12 @@ Draws keypoints, minicourt, player boxes, ball box, and stats onto the output fr
 import numpy as np
 import cv2
 
-from core import (
+from ..core import (
     Point,
     BoundingBox
 )
-from pose_estimation import ShotType
-from minicourt import MiniCourt
+from ..pose_estimation import ShotType
+from ..minicourt import MiniCourt
 
 
 class Renderer:

@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from pathlib import Path
 
-from core import (
+from ..core import (
     Point,
     Line,
     euclidean_distance,
