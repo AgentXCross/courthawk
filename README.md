@@ -56,7 +56,7 @@ $$
 
 The minicourt provides a bird-eye's view of the point. The player and ball positions are approxiamated since it is impossible to determine the height of the tennis ball given only a single angle of the point. 
 
-We first extract the foot position of the players and the center position of the ball on the actual court. To translate the positions onto minicourt, we calculate the homography. The homography is a matrix $H \in \R^{3 \text{x} 3}$ that maps points from the original image plane to corresponding points on the mini-court plane. The homography requires at least 4 points to calculate as it has 8 degrees of freedom.
+We first extract the foot position of the players and the center position of the ball on the actual court. To translate the positions onto minicourt, we calculate the homography. The homography is a matrix $H \in \mathbb{R}^{3 \times 3}$ that maps points from the original image plane to corresponding points on the mini-court plane. The homography requires at least 4 points to calculate as it has 8 degrees of freedom.
 
 $$
 \begin{bmatrix}
@@ -68,7 +68,7 @@ y_{mini} \\
 \begin{bmatrix}
 x' \\
 y' \\
-z' \\
+z' 
 \end{bmatrix}
 = 
 \begin{bmatrix}
@@ -120,7 +120,7 @@ Rather than use the landmark positions directly, we extract a smaller set of fea
 17. Right wrist offset: (Right wrist x-position - mid-shoulder x-position) / shoulder width
 18. Left wrist offset: (Left wrist x-position - mid-shoudler x-position) / shoulder width
 
-The extracted feature vector is used to train a `Softmax/Multinomial Logistic Regression` model to classify shots for 3 classes: forehand, backhand, and serve. The system applies the model for all 7 frames and decides by a majority vote.
+The extracted feature vector is used to train a `Softmax/Multinomial Logistic Regression` model to classify shots for 3 classes: forehand, backhand, and serve. The training dataset was extracted from videos by hand. The system applies the model for all 7 frames and decides by a majority vote.
 
 Due to the small size of players, the cropped box contains a very low quality image, making it difficult for MediaPipe to determine the 33 landmarks. We should consider using methods like Real-ESRGAN to upscale the images before inference. Additionally, we should consider training 2 separate models for the players on the 2 sides of the court. 
 
