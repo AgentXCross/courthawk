@@ -21,3 +21,6 @@ __pycache__
 
 # Zips
 *.zip
+
+# Backend Uploads
+backend/uploads

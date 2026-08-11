@@ -181,16 +181,16 @@ class BallTracker:
 
         for frame_index in range(len(ball_positions)):
             ball = Point(
-                x = df_ball_positions.at(frame_index, "mid_x"),
-                y = df_ball_positions.at(frame_index, "mid_y")
+                x = df_ball_positions.at[frame_index, "mid_x"],
+                y = df_ball_positions.at[frame_index, "mid_y"]
             )
 
             distances_this_frame: list[float] = [] # list[float, float]
 
             for player_id in player_ids:
                 player = Point(
-                    x = df_players.at(frame_index, f"p{player_id}_mid_x"),
-                    y = df_players.at(frame_index, f"p{player_id}_mid_y")
+                    x = df_players.at[frame_index, f"p{player_id}_mid_x"],
+                    y = df_players.at[frame_index, f"p{player_id}_mid_y"]
                 )
 
                 distances_this_frame.append(

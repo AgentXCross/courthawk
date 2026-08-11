@@ -93,7 +93,7 @@ class PoseEstimator:
 
 
     def __init__(self, model_path: Path):
-        base_options = mp_python.BaseOptions(model_asset_path = model_path)
+        base_options = mp_python.BaseOptions(model_asset_path = str(model_path))
         options = mp_vision.PoseLandmarkerOptions(base_options = base_options)
         self.landmarker = mp_vision.PoseLandmarker.create_from_options(options)
 

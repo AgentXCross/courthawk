@@ -13,6 +13,7 @@ xgboost
 # backend
 fastapi
 uvicorn
+python-multipart
 
 # development
 matplotlib

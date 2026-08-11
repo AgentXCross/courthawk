@@ -100,7 +100,7 @@ def main():
     )
 
     for i, frame in enumerate(output_video_frames): # draw frame number
-        cv2.putText(frame, f"Frame #{i + 1}", (50, 170), cv2.FONT_HERSHEY_TRIPLEX, 2, (1, 255, 214), 5)
+        cv2.putText(frame, f"Frame #{i + 1}", (50, 170), cv2.FONT_HERSHEY_TRIPLEX, 2, renderer.color_1, 5)
         
     output_video = Video(
         frames = output_video_frames,
