@@ -60,17 +60,17 @@ We first extract the foot position of the players and the center position of the
 
 $$
 \begin{bmatrix}
-x_{mini} \\
-y_{mini} \\
+x_{\text{mini}} \\
+y_{\text{mini}} \\
 1
 \end{bmatrix}
 \sim
 \begin{bmatrix}
 x' \\
 y' \\
-z' 
+z'
 \end{bmatrix}
-= 
+=
 \begin{bmatrix}
 h_1 & h_2 & h_3 \\
 h_4 & h_5 & h_6 \\
