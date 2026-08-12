@@ -4,15 +4,23 @@ Computer vision system for tennis that detects and tracks players and ball, esti
 
 This project is inspired by [this tutorial](https://www.youtube.com/watch?v=L23oIHZE14w). It has since been substantially expanded and reworked, with significant improvements to the code structure, system architecture, and computer vision methods.
 
+To Do: Change the XGBoost model to Multinomial Logistic Regression, For shot classification use 2 separate models based on which side of the court the player is, Continue building the frontend, Heatmap regression models to replace current ball tracking and court keypoints.
+
 <p align="center">
   <img src="courthawk_engine/data/output_videos/sinner_zverev_output.gif" width="70%">
 </p>
 
 ## How It Works
 
+The below is an analysis on how the system works when we run `python3 -m courthawk-engine.main`. The system works very similarly on the web app, except that only the bounding boxes and court keypoints are overlayed onto the video. The mini-court and statistics are displayed elsewhere on the frontend. However, the mathematical logic remains identical.
+
+---
+
 ### Input
 
 As input, CourtHawk expects a video from the standard TV angle of 1 tennis point starting from the moment the server hits the ball and ending as soon as the point finishes (Currently working on a method to accept an entire tennis match and determining how to split up points). Both tennis players should be visible from the very first frame. The court geometry is assumed to be constant during the duration of the video because the system only runs inference on the court keypoint model using a few arbitrary frames. 
+
+---
 
 ### Player Tracker
 
@@ -28,6 +36,8 @@ The ball boys and chair umpire are likely to also be tracked by the model, so to
 
 There is a chance the model fails to detect the players during certain frames. To ensure this doesn't crash any computations, missing detections are linearly interpolated between the nearest known detections. Any remaining missing detections at the beginning or end of the video are backward-filled or forward-filled, respectively.
 
+---
+
 ### Ball Tracker
 
 #### Ball Detection and Training
@@ -40,13 +50,15 @@ Since the ball moves at a very high speed and is frequently blocked by players, 
 
 Currently working replacing YOLO for ball tracking and instead adapting a model that produces a heatmap of the ball's location over the entire image (model would be analogous to a semantic segmentation model).
 
+---
+
 ### Court Keypoints
 
 #### Keypoint Detection and Training
 
 Court keypoint detection is done using a fine-tuned `ResNet-18` model. The model is fine-tuned with a public dataset consisting of 8841 images, separated into 75% training and 25% validation. The dataset can be accessed at: [Tennis Court Detector GitHub](https://github.com/yastrebksv/TennisCourtDetector). The model is trained to predict 28 independent values, corresponding to the 14 keypoints on a court. Thus, this task is treated as regression.
 
-### Keypoint Refinement
+#### Keypoint Refinement
 
 For each predicted keypoint, a crop is made around it, centered about the prediction. From the crop, we threshold the image to find bright pixels and apply the Probabilistic Hough Transform to detect line segments. Duplicated line segments within a distance threshold on both ends are merged together. If only 2 line segments remain, we compute their intersection, and if it exists, we replace the prediction with the intersections. If any of the conditions fail, we keep the original prediction.
 
@@ -69,6 +81,8 @@ $$
 0.00 & 0.01 & 0.04 & 0.01 & 0.00
 \end{bmatrix}
 $$
+
+---
 
 ### Mini-Court
 
@@ -103,6 +117,8 @@ y \\
 \end{bmatrix}
 ```
 
+---
+
 ### Shot Detection
 
 To detect when a shot occurs, we start by graphing the minimum distance between the ball and either player over time. When a player hits the ball, this distance should briefly approach a minimum before increasing as the ball travels toward their opponent. Therefore, local minima in the distance curve are treated as potential shots.
@@ -112,6 +128,8 @@ To reduce false detections caused by noise in the ball and player tracking, we r
 <p align="center">
   <img src="courthawk_engine/data/assets/ball_hit.png" width="70%">
 </p>
+
+---
 
 ### Shot Classification
 
@@ -153,6 +171,8 @@ The extracted feature vector is used to train a `Softmax/Multinomial Logistic Re
 
 Due to the small size of players, the cropped box contains a very low quality image, making it difficult for MediaPipe to determine the 33 landmarks. We should consider using methods like Real-ESRGAN to upscale the images before inference. Additionally, we should consider training 2 separate models for the players on the 2 sides of the court. 
 
+---
+
 ### Speed Statistics
 
 For each player, we keep track of 2 statistics:
@@ -160,6 +180,8 @@ For each player, we keep track of 2 statistics:
 - Player Current Speed
 
 The last shot speed is calculated by using when the player last hit the ball as a start frame and a few frames later as the end frame. We can calculated the speed of the shot using $s_{avg} = \frac{\Delta d}{\Delta t}$ from start frame to end frame. The player current speed is calculated every few frames using the same formula.
+
+---
 
 ### Output
 

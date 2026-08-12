@@ -41,13 +41,13 @@ class Video:
         )
 
     def save_video(self, output_path: Path) -> None:
-        """Save the video to disk."""
+        """Save the video to disk as MP4 (H.264), so it's playable in a browser <video> tag."""
         if not self.frames:
             raise ValueError("Cannot save an empty video.")
 
         writer = cv2.VideoWriter(
             str(output_path),
-            cv2.VideoWriter_fourcc(*"MJPG"),
+            cv2.VideoWriter_fourcc(*"avc1"),
             self.fps,
             (
                 self.frames[0].shape[1],

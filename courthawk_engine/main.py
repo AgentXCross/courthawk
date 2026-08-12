@@ -32,7 +32,7 @@ def main():
     ball_tracker_model_path: Path = ENGINE_DIR / "models" / "yolo5_ball_detector.pt"
     pose_estimator_model_path: Path = ENGINE_DIR / "models" / "pose_landmarker.task"
     shot_classifier_model_path: Path = ENGINE_DIR / "models" / "shot_classifier.pkl"
-    output_video_path: Path = ENGINE_DIR / "data" / "output_videos" / "sinner_zverev_output.avi"
+    output_video_path: Path = ENGINE_DIR / "data" / "output_videos" / "sinner_zverev_output.mp4"
 
     PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
 

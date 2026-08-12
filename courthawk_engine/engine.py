@@ -237,7 +237,7 @@ def analyze_point(video: Video) -> PointAnalysis:
     annotated_frames = renderer.draw_keypoints_on_video(annotated_frames, detected_court_keypoints)
 
     OUTPUT_DIR.mkdir(parents = True, exist_ok = True)
-    annotated_video_path = OUTPUT_DIR / f"{uuid.uuid4().hex}.avi"
+    annotated_video_path = OUTPUT_DIR / f"{uuid.uuid4().hex}.mp4"
 
     output_video = Video(
         frames = annotated_frames,
