@@ -30,7 +30,11 @@ Player tracking is done by a pretrained `YOLOv8x` model. The model is directed t
 
 #### Player Selection
 
-The ball boys and chair umpire are likely to also be tracked by the model, so to select the actual players, we calculate the sum of the Euclidean Distances of every detected "person" to their nearest 3 court keypoints (to be computed later), and select the 2 persons with the minimum values.
+The ball boys and chair umpire are likely to also be tracked by the model, so to select the actual players, we score every detected "person" using a weighted combination of 2 terms: the sum of the Euclidean distances from their foot position to their nearest 3 court keypoints, and the vertical (y) distance from their foot position to the nearest baseline. The 2 persons with the lowest score are selected as the players.
+
+$$\text{score} = \alpha \cdot (\text{sum of distances to nearest 3 keypoints}) + \beta \cdot (\text{y-distance to nearest baseline})$$
+
+with $\alpha = 0.2$ and $\beta = 0.8$ by default. The baseline term was added because ball boys and umpires are often positioned right next to a court corner keypoint, which the distance-only formula would otherwise mistake for a player standing on the court.
 
 #### Interpolating Missing Detections
 
