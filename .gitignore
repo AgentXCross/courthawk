@@ -24,3 +24,6 @@ __pycache__
 
 # Backend Uploads
 backend/uploads
+
+# Claude
+CLAUDE.md
