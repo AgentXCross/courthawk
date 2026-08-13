@@ -58,35 +58,47 @@ class PlayerTracker:
 
 
     def choose_players(
-            self, 
-            court_keypoints: list[Point], 
-            player_dict: dict[int, BoundingBox]
+            self,
+            court_keypoints: list[Point],
+            player_dict: dict[int, BoundingBox],
+            alpha: float = 0.2,
+            beta: float = 0.8
         ):
         """
-        Filters for the 2 players. The players are chosen by calculating distance
-        between every person and the nearest 3 court_keypoints. 
-        
-        Returns the indices of the 2 selected players.
+        Filters for the 2 players. Each person is scored as:
+
+            alpha * (sum of distances to the nearest 3 court keypoints)
+            + beta * (y-distance to the nearest baseline)
+
+        Lower score is better. Returns the indices of the 2 selected players.
         """
-        distances: list[tuple[int, float]] = []
+        # court_keypoints[0:2] are the near baseline corners, court_keypoints[2:4] are the
+        # far baseline corners (see the keypoint ordering in engine.py's _real_court_keypoints())
+        near_baseline_y = (court_keypoints[0].y + court_keypoints[1].y) / 2
+        far_baseline_y = (court_keypoints[2].y + court_keypoints[3].y) / 2
+
+        scores: list[tuple[int, float]] = []
         for track_id, bbox in player_dict.items():
-            player_center = bbox.center
+            player_foot = bbox.foot
 
             # Calculate distance from each person to all the court keypoints
             dists = []
             for keypoint in court_keypoints:
-                dist = euclidean_distance(player_center, keypoint)
+                dist = euclidean_distance(player_foot, keypoint)
                 dists.append(dist)
-            
-            # Sort and then take the average of the smallest 3 values
-            dists.sort()
-            avg_dist_of_min_3 = float(sum(dists[:3]) / 3)
 
-            distances.append((track_id, avg_dist_of_min_3))
+            # Sort and then take the sum of the smallest 3 values
+            dists.sort()
+            sum_dist_of_min_3 = float(sum(dists[:3]))
+
+            baseline_y_dist = min(abs(player_foot.y - near_baseline_y), abs(player_foot.y - far_baseline_y))
+
+            score = alpha * sum_dist_of_min_3 + beta * baseline_y_dist
+            scores.append((track_id, score))
 
         # Sort and then take the smallest 2 values who we choose as the player
-        distances.sort(key = lambda x: x[1])
-        chosen_players = [distances[0][0], distances[1][0]]
+        scores.sort(key = lambda x: x[1])
+        chosen_players = [scores[0][0], scores[1][0]]
         return chosen_players
 
 
