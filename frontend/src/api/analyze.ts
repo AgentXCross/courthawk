@@ -2,9 +2,7 @@
 // analysis results back.
 
 import type { PointAnalysis } from "../types/analysis";
-
-// Move to an env var once ready to deploy, this is the backend address
-const API_BASE_URL = 'http://localhost:8000'
+import { API_BASE_URL } from "./config"
 
 
 // Function is async so it is allowed to pause while it waits for something, 

@@ -1,7 +1,13 @@
-// TODO: <video> pointed at annotated_video_path, reports currentTime up via useVideoTime
+import type { RefObject } from 'react'
+import { API_BASE_URL } from '../api/config'
 
-function VideoPlayer() {
-  return <div id="video-inner" />
+interface VideoPlayerProps {
+  src: string
+  videoRef: RefObject<HTMLVideoElement | null>
+}
+
+function VideoPlayer({ src, videoRef }: VideoPlayerProps) {
+  return <video ref={videoRef} src={`${API_BASE_URL}${src}`} controls />
 }
 
 export default VideoPlayer

@@ -1,22 +1,104 @@
 #layout {
   display: flex;
+  flex-direction: column;
   min-height: 100svh;
 }
 
-#mini-court {
+#navbar {
+  background: #CCFF00;
+  padding: 0.5rem 2.5rem;
+  font-family: 'Anton', sans-serif;
+  font-size: 2.5rem;
+  letter-spacing: 0.05em;
+  color: #000;
+  text-align: left;
+}
+
+#content {
+  display: flex;
   flex: 1;
 }
 
-#right {
-  flex: 2;
-  display: flex;
-  flex-direction: column;
+#mini-court {
+  flex: 3;
+  margin: 1.5rem;
+  padding: 1rem;
+  background: #2c2c2e;
+  border-radius: 24px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 #video {
-  flex: 2;
+  flex: 7;
+  overflow: hidden;
+  margin: 1.5rem;
+  padding: 1.25rem;
+  background: #2c2c2e;
+  border-radius: 24px;
+  box-sizing: border-box;
+}
+
+#video video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 14px;
+}
+
+#mini-court-inner {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+#upload-dropzone {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  border: 3px dashed #5a5a5c;
+  border-radius: 14px;
+  text-align: center;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+#upload-dropzone:hover {
+  border-color: #ccff00;
+  background-color: rgba(204, 255, 0, 0.06);
+}
+
+#upload-icon {
+  font-size: 2.5rem;
+}
+
+#upload-dropzone h2 {
+  font-family: 'Anton', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+  color: #f2f2f2;
+  margin: 0;
+}
+
+#upload-dropzone p {
+  margin: 0;
+  color: #9a9a9c;
+  font-size: 0.95rem;
+}
+
+#upload-error {
+  color: #ff6b6b !important;
+  font-weight: 600;
 }
 
 #stats {
-  flex: 1;
+  flex: none;
 }
