@@ -5,13 +5,27 @@
 }
 
 #navbar {
-  background: #CCFF00;
-  padding: 0.5rem 2.5rem;
-  font-family: 'Anton', sans-serif;
-  font-size: 2.5rem;
-  letter-spacing: 0.05em;
-  color: #000;
-  text-align: left;
+  position: relative;
+  background: #000002;
+  padding: 0.25rem 2.5rem;
+  font-family: 'Anton SC', sans-serif;
+  font-size: 6.69rem;
+  letter-spacing: 0.00em;
+  color: #CCFF00;
+  text-align: center;
+  text-shadow:
+    0 0 1px #CCFF00,
+    0 0 2px #CCFF00,
+    0 0 3px #CCFF00;
+}
+
+#navbar-logo {
+  position: absolute;
+  left: 5.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 177px;
+  filter: drop-shadow(0 0 3px #CCFF00);
 }
 
 #content {
@@ -22,10 +36,8 @@
 #mini-court {
   flex: 3;
   margin: 1.5rem;
-  padding: 1rem;
-  background: #2c2c2e;
-  border-radius: 24px;
   box-sizing: border-box;
+  border-radius: 24px;
   overflow: hidden;
 }
 
@@ -51,8 +63,6 @@
   width: 100%;
   height: 100%;
   display: block;
-  border-radius: 14px;
-  overflow: hidden;
 }
 
 #upload-dropzone {
@@ -81,7 +91,7 @@
 }
 
 #upload-dropzone h2 {
-  font-family: 'Anton', sans-serif;
+  font-family: 'Cal Sans', sans-serif;
   font-size: 2rem;
   letter-spacing: 0.04em;
   color: #f2f2f2;
@@ -90,8 +100,26 @@
 
 #upload-dropzone p {
   margin: 0;
-  color: #9a9a9c;
+  color: #c3c3c3;
   font-size: 0.95rem;
+}
+
+#upload-requirements {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: #a7a7a7;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+#upload-requirements li {
+  margin-top: 0.35rem;
+}
+
+#upload-requirements li::before {
+  content: '• ';
+  color: #CCFF00;
 }
 
 #upload-error {

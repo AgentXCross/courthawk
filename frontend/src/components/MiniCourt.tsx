@@ -10,7 +10,7 @@ const PADDING = 5 // meters of extra space around the court, for players standin
 
 // Mirrors engine.py's _real_court_keypoints(). That function only ever depends on fixed
 // court-dimension constants, never on the video, so this layout is identical on every analysis.
-// Safe to draw it before any upload happens, so the court is always visible.
+// Draw it before any upload happens, so the court is always visible.
 const DOUBLE_LINE_WIDTH = 10.973
 const BASELINE_TO_NET = 11.89
 const DOUBLE_ALLEY_WIDTH = 1.372
@@ -31,6 +31,7 @@ const COURT_LINES: [number, number][] = [
 ]
 
 function defaultCourtKeypoints(): Point[] {
+  // Returns a list of points 
   const width = DOUBLE_LINE_WIDTH
   const length = BASELINE_TO_NET * 2
   const alley = DOUBLE_ALLEY_WIDTH
@@ -63,7 +64,11 @@ function MiniCourt({ analysis, currentFrame }: MiniCourtProps) {
   const ballPosition = analysis?.ball_court_positions[currentFrame]
 
   return (
-    <svg id="mini-court-inner" viewBox={`${-PADDING} ${-PADDING} ${width + 2 * PADDING} ${length + 2 * PADDING}`}>
+    <svg
+      id="mini-court-inner"
+      viewBox={`${-PADDING} ${-PADDING} ${width + 2 * PADDING} ${length + 2 * PADDING}`}
+      preserveAspectRatio="xMidYMid slice"
+    >
       <rect x={-PADDING} y={-PADDING} width={width + 2 * PADDING} height={length + 2 * PADDING} fill="#00adf2" /> {/*#63ab64 for green*/}
       <rect x={0} y={0} width={width} height={length} fill="#0165a1" />
 

@@ -50,7 +50,10 @@ function App() {
 
   return (
     <div id="layout">
-      <nav id="navbar">COURTHAWK</nav>
+      <nav id="navbar">
+        <img id="navbar-logo" src="/assets/courthawk_logo.png" alt="CourtHawk logo" />
+        CourtHawk
+      </nav>
       <div id="content">
         <section id="mini-court">
           <MiniCourt analysis={analysis} currentFrame={currentFrame}/>
@@ -73,8 +76,16 @@ function App() {
                 hidden
               />
               <span id="upload-icon">{isLoading ? '⏳' : '⬆'}</span>
-              <h2>{isLoading ? 'ANALYZING' : 'DROP YOUR POINT'}</h2>
+              <h2>{isLoading ? 'Running your point through CourtHawk' : 'Drop your point'}</h2>
               <p>{isLoading ? 'Breaking down every shot…' : 'Click or drag a video file to get started'}</p>
+              {!isLoading && (
+                <ul id="upload-requirements">
+                  <li>Footage must be from the standard broadcast TV camera angle</li>
+                  <li>Must contain one point only starting at the serve and ending when the point finishes</li>
+                  <li>Both players visible and ready from the very first frame</li>
+                  <li>Camera must be stationary during the duration of the point</li>
+                </ul>
+              )}
               {error && <p id="upload-error">{error}</p>}
             </div>
           )}
