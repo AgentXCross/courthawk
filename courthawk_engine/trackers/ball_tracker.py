@@ -34,8 +34,9 @@ class BallTracker:
 
     get_ball_shot_frames() determines during which frames the ball was hit by a player.
     """
-    def __init__(self, model_path: Path):
+    def __init__(self, model_path: Path, device: str = "cpu"):
         self.model: YOLO = YOLO(model_path)
+        self.device: str = device
 
 
     def detect_frames(
@@ -72,7 +73,11 @@ class BallTracker:
         Runs YOLO model to detect ball position on a single frame.
         Returns as a BoundingBox.
         """
-        results = self.model.predict(frame, conf = 0.10)[0]
+        results = self.model.predict(
+            frame, 
+            conf = 0.10,
+            device = self.device
+        )[0]
 
         for box in results.boxes:
             x1, y1, x2, y2 = box.xyxy.tolist()[0]

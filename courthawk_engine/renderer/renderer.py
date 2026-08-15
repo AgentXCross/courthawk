@@ -287,7 +287,7 @@ class Renderer:
         """Draws the players on the minicourt as dots."""
         assert len(video_frames) == len(player_mini_court_positions)
 
-        for frame_num, frame in enumerate(frame):
+        for frame_num, frame in enumerate(video_frames):
             for _, point_position in player_mini_court_positions[frame_num].items():
                 cv2.circle(frame, (int(point_position.x), int(point_position.y)), 10, self.color_2, -1)
 

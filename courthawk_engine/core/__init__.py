@@ -1,8 +1,10 @@
 from .video import Video
 from .data_structures import (
-    Point, 
+    Point,
     Line,
     BoundingBox,
+    Handedness,
+    CourtSide,
     euclidean_distance,
     closest_keypoint_index,
     measure_offset,

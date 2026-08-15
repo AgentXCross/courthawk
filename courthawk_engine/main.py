@@ -2,6 +2,8 @@
 This script is primarily for testing. It runs an image through the entire 
 pipeline and produces the output video. This file should not be accessed
 by the frontend or backend folders.
+
+Run with python3 -m courthawk_engine.main
 """
 
 from pathlib import Path
@@ -9,7 +11,9 @@ from pathlib import Path
 from .core import (
     Video,
     Point,
-    BoundingBox
+    BoundingBox,
+    CourtSide,
+    Handedness
 )
 from .court_keypoint_detector import CourtKeypointDetector
 from .minicourt import MiniCourt
@@ -19,40 +23,51 @@ from .trackers import PlayerTracker, BallTracker
 
 import cv2
 import numpy as np
-
+import torch
 
 # Anchored on this file's own location
 ENGINE_DIR = Path(__file__).resolve().parent
 
 
 def main():
+    device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+
     input_video_path: Path = ENGINE_DIR / "data" / "input_videos" / "sinner_zverev.mp4"
     court_keypoints_model_path: Path = ENGINE_DIR / "models" / "keypoints_model.pt"
     player_tracker_model_path: Path = ENGINE_DIR / "models" / "yolov8x_player_tracker.pt"
     ball_tracker_model_path: Path = ENGINE_DIR / "models" / "yolo5_ball_detector.pt"
     pose_estimator_model_path: Path = ENGINE_DIR / "models" / "pose_landmarker.task"
-    shot_classifier_model_path: Path = ENGINE_DIR / "models" / "shot_classifier.pkl"
+    # shot_classifier.pkl is stale (trained on the old 18-feature get_keypoints()) and will
+    # crash against the current 14-feature output. shot_classifier_random_forest.pkl and
+    # shot_classifier_log_regression.pkl are both trained on the current feature set and
+    # interchangeable here — swap the filename to switch models.
+    shot_classifier_model_path: Path = ENGINE_DIR / "models" / "shot_classifier_random_forest.pkl"
     output_video_path: Path = ENGINE_DIR / "data" / "output_videos" / "sinner_zverev_output.mp4"
 
     PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
 
+    COURT_SIDE_HANDEDNESS: dict[CourtSide, Handedness] = {
+        CourtSide.CLOSE: Handedness.RIGHT,
+        CourtSide.FAR: Handedness.RIGHT
+    }
+
     video = Video.read_video(input_video_path) 
 
-    player_tracker = PlayerTracker(model_path = player_tracker_model_path)
-    ball_tracker = BallTracker(model_path = ball_tracker_model_path)
+    player_tracker = PlayerTracker(model_path = player_tracker_model_path, device = device)
+    ball_tracker = BallTracker(model_path = ball_tracker_model_path, device = device)
 
-    player_detections: list[dict[int, BoundingBox]] = player_tracker.detect_frames(
+    player_bbox_detections: list[dict[int, BoundingBox]] = player_tracker.detect_frames(
         video.frames,
         read_from_stub = False,
         stub_path = None
     )
-    ball_detections: list[BoundingBox | None] = ball_tracker.detect_frames(
+    ball_bbox_detections: list[BoundingBox | None] = ball_tracker.detect_frames(
         video.frames,
         read_from_stub = False,
         stub_path = None
     )
     
-    ball_detections: list[BoundingBox] = ball_tracker.interpolate_ball_positions(ball_detections)
+    ball_bbox_detections: list[BoundingBox] = ball_tracker.interpolate_ball_positions(ball_bbox_detections)
 
     court_line_detector = CourtKeypointDetector(court_keypoints_model_path)
 
@@ -63,19 +78,29 @@ def main():
     ]
     court_keypoints: list[Point] = court_line_detector.predict_average(sample_frames)
 
-    player_detections, player_ids = player_tracker.choose_and_filter_players(court_keypoints, player_detections)
-    # player_detections is a list[dict[int, BoundingBox]]
+    player_bbox_detections, player_ids = player_tracker.choose_and_filter_players(court_keypoints, player_bbox_detections)
+    # player_bbox_detections is a list[dict[int, BoundingBox]]
+
+    player_sides: dict[int, CourtSide] = player_tracker.determine_court_sides(court_keypoints, player_bbox_detections, player_ids)
+    print(f"Player sides: {player_sides}")
+
+    # Mirror the crop before pose estimation when far side XOR left handed
+    should_mirror: dict[int, bool] = {
+        pid: (player_sides[pid] == CourtSide.FAR) ^ (COURT_SIDE_HANDEDNESS[player_sides[pid]] == Handedness.LEFT)
+        for pid in player_ids
+    }
+    print(f"Should mirror: {should_mirror}")
 
     mini_court = MiniCourt(video.frames[0])
 
-    ball_shot_frames: list[int] = ball_tracker.get_ball_shot_frames(ball_detections, player_detections)
+    ball_shot_frames: list[int] = ball_tracker.get_ball_shot_frames(ball_bbox_detections, player_bbox_detections)
 
     pose_estimator = PoseEstimator(model_path = pose_estimator_model_path)
     shot_classifier = ShotClassifier(model_path = shot_classifier_model_path)
     
-    shot_types, hitting_player_ids = pose_estimator.classify_shots(video.frames, ball_shot_frames, player_detections, ball_detections, shot_classifier)
+    shot_types, hitting_player_ids = pose_estimator.classify_shots(video.frames, ball_shot_frames, player_bbox_detections, ball_bbox_detections, shot_classifier, should_mirror)
 
-    player_mini_court_detections, ball_mini_court_detections = mini_court.convert_bbox_to_mini_court_coords(player_detections, ball_detections, court_keypoints)
+    player_mini_court_detections, ball_mini_court_detections = mini_court.convert_bbox_to_mini_court_coords(player_bbox_detections, ball_bbox_detections, court_keypoints)
    
     player_shots_data: list[dict[str, int | float]] = mini_court.get_shot_stats(ball_shot_frames, player_mini_court_detections, ball_mini_court_detections, video.fps)
 
@@ -86,8 +111,8 @@ def main():
     output_video_frames: list[np.ndarray] = renderer.render(
         video.frames,
         court_keypoints,
-        player_detections,
-        ball_detections,
+        player_bbox_detections,
+        ball_bbox_detections,
         player_mini_court_detections,
         ball_mini_court_detections,
         ball_shot_frames,

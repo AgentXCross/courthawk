@@ -8,6 +8,7 @@ the analysis results.
 
 import cv2
 import numpy as np
+import torch
 
 import uuid
 from dataclasses import dataclass
@@ -22,6 +23,8 @@ from .core import (
     Video,
     Point,
     BoundingBox,
+    CourtSide,
+    Handedness,
     constants,
     euclidean_distance
 )
@@ -32,6 +35,7 @@ ENGINE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = ENGINE_DIR / "models"
 OUTPUT_DIR = ENGINE_DIR / "data" / "output_videos"
 PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
+DEVICE = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
 
 @dataclass
@@ -71,11 +75,11 @@ class PointAnalysis:
 
 @cache
 def _player_tracker() -> PlayerTracker:
-    return PlayerTracker(model_path = MODELS_DIR / "yolov8x_player_tracker.pt")
+    return PlayerTracker(model_path = MODELS_DIR / "yolov8x_player_tracker.pt", device = DEVICE)
 
 @cache
 def _ball_tracker() -> BallTracker:
-    return BallTracker(model_path = MODELS_DIR / "yolo5_ball_detector.pt")
+    return BallTracker(model_path = MODELS_DIR / "yolo5_ball_detector.pt", device = DEVICE)
 
 @cache
 def _court_keypoint_detector() -> CourtKeypointDetector:
@@ -87,7 +91,11 @@ def _pose_estimator() -> PoseEstimator:
 
 @cache
 def _shot_classifier() -> ShotClassifier:
-    return ShotClassifier(model_path = MODELS_DIR / "shot_classifier.pkl")
+    # shot_classifier.pkl is stale (trained on the old 18-feature get_keypoints()) and will
+    # crash against the current 14-feature output. shot_classifier_random_forest.pkl and
+    # shot_classifier_log_regression.pkl are both trained on the current feature set and
+    # interchangeable here — swap the filename to switch models.
+    return ShotClassifier(model_path = MODELS_DIR / "shot_classifier_random_forest.pkl")
 
 @cache
 def _renderer() -> Renderer:
@@ -138,7 +146,17 @@ def _transform_point(point: Point, H: np.ndarray) -> Point:
 
 # Main entry point
     
-def analyze_point(video: Video) -> PointAnalysis:
+def analyze_point(
+        video: Video, 
+        court_side_handedness: dict[CourtSide, Handedness] | None = None
+    ) -> PointAnalysis:
+
+    if court_side_handedness is None: # Default to double righty if no input is provided
+        court_side_handedness = {
+            CourtSide.CLOSE: Handedness.RIGHT,
+            CourtSide.FAR: Handedness.RIGHT,
+        }
+
     player_tracker = _player_tracker()
     ball_tracker = _ball_tracker()
 
@@ -156,18 +174,27 @@ def analyze_point(video: Video) -> PointAnalysis:
     detected_court_keypoints = _court_keypoint_detector().predict_average(sample_frames)
 
     player_bbox_detections, player_ids = player_tracker.choose_and_filter_players(
-        detected_court_keypoints, 
+        detected_court_keypoints,
         player_bbox_detections
     )
+
+    player_sides = player_tracker.determine_court_sides(detected_court_keypoints, player_bbox_detections, player_ids)
+
+    # Mirror the crop before pose estimation when far side XOR left handed
+    should_mirror: dict[int, bool] = {
+        pid: (player_sides[pid] == CourtSide.FAR) ^ (court_side_handedness[player_sides[pid]] == Handedness.LEFT)
+        for pid in player_ids
+    }
 
     ball_shot_frames = ball_tracker.get_ball_shot_frames(ball_bbox_detections, player_bbox_detections)
 
     shot_types, hitting_player_ids = _pose_estimator().classify_shots(
-        video.frames, 
-        ball_shot_frames, 
-        player_bbox_detections, 
-        ball_bbox_detections, 
-        _shot_classifier()
+        video.frames,
+        ball_shot_frames,
+        player_bbox_detections,
+        ball_bbox_detections,
+        _shot_classifier(),
+        should_mirror
     )
 
     # Homography: Video-pixel court keypoints -> Real-life court in meters

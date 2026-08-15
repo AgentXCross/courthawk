@@ -143,6 +143,8 @@ class PoseEstimator:
 
         if torso_height > 0:
             keypoints = [p / torso_height for p in keypoints]
+        else:
+            print(f"Warning torso height is non positive.\n")
 
         # Get the relevant Points
         left_shoulder: Point = keypoints[self.L_SHOULDER]
@@ -158,85 +160,60 @@ class PoseEstimator:
 
         mid_shoulder = (left_shoulder + right_shoulder) / 2 # This new mid_shoulder is centered around the mid-hip and scaled
 
-        left_extension: float = _norm(left_wrist - left_shoulder)
-        right_extension: float = _norm(right_wrist - right_shoulder)
+        # 1. Max wrist height relative to mid-shoulder
+        # Expect the serve to be a greater value than forehands and backhands
+        max_wrist_height = max(-(left_wrist.y - mid_shoulder.y), -(right_wrist.y - mid_shoulder.y))
 
+        # 2 & 3. Left and right elbow angles
+        # Expect serve to be a greater angle than groundstrokes
         l_elbow_angle: float = _angle(left_shoulder, left_elbow, left_wrist)
         r_elbow_angle: float = _angle(right_shoulder, right_elbow, right_wrist)
 
-        # 1. Max wrist height relative to mid-shoulder
-        max_wrist_height = max(-(left_wrist.y - mid_shoulder.y), -(right_wrist.y - mid_shoulder.y))
-
-        # 2. Vertical wrist separation
-        vert_wrist_sep = abs(left_wrist.y - right_wrist.y)
-
-        # 3. Horizontal wrist separation
-        horiz_wrist_sep = abs(left_wrist.x - right_wrist.x)
-
-        # 4 & 5. More/less extended arm elbow angles
-        if left_extension >= right_extension:
-            more_extended_elbow, less_extended_elbow = l_elbow_angle, r_elbow_angle
-        else:
-            more_extended_elbow, less_extended_elbow = r_elbow_angle, l_elbow_angle
-
-        # 6. Arm extension asymmetry
-        ext_asymmetry = abs(left_extension - right_extension)
-
-        # 7. Shoulder rotation angle
+        # 4. Shoulder tilt relative to the horizontal
+        # Expect the serve to be a larger angle compared to groundstrokes
         shoulder_angle = _line_angle(left_shoulder, right_shoulder)
 
-        # 8. Hip rotation angle
-        hip_angle = _line_angle(left_hip, right_hip)
-
-        # 9. Hip-shoulder twist
-        twist = shoulder_angle - hip_angle
-
-        # 10. Torso lean (angle of spine from vertical, mid_hip is at origin)
+        # 5. Torso lean (angle of mid-hip to mid-shoulder from vertical)
         torso_lean = np.degrees(np.arctan2(mid_shoulder.x, -mid_shoulder.y))
 
-        # 11. Wrist x-coordinate product
-        wrist_product = float(left_wrist.x) * float(right_wrist.x)
+        # 6 & 7. Left and right wrist x positions
+        # Expect right wrist to be positive for forehand, negative for backhand, and near 0 for serves.
+        # Left wrist may vary but should follow right write for groundstrokes, and near 0 for serves.
+        l_wrist_x = left_wrist.x
+        r_wrist_x = right_wrist.x
 
-        # 12. Min cross-body shoulder-to-wrist distance
-        cross_dist = min(_norm(left_wrist - right_shoulder), _norm(right_wrist - left_shoulder))
+        # 8 & 9: Left and right wrist y positions
+        # Expect both to be high for serve, lower for groundstrokes
+        l_wrist_y = -left_wrist.y
+        r_wrist_y = -right_wrist.y
 
-        # 13. Angle between forearm vectors
-        forearm_angle = _vec_angle(left_wrist - left_elbow, right_wrist - right_elbow)
+        # 10 & 11: Left and right arm extension
+        l_extension: float = _norm(left_wrist - left_shoulder)
+        r_extension: float = _norm(right_wrist - right_shoulder)
 
-        # 14. Elbow angle difference
-        elbow_angle_diff = abs(l_elbow_angle - r_elbow_angle)
+        # 12 & 13: Left and right elbow x positions
+        l_elbow_x = left_elbow.x
+        r_elbow_x = right_elbow.x
 
-        # 15. Average wrist height minus average elbow height
-        wrist_vs_elbow = -((left_wrist.y + right_wrist.y) / 2 - (left_elbow.y + right_elbow.y) / 2)
+        # 14: Absolute wrist separation
+        wrist_x_separation = abs(right_wrist.x - left_wrist.x)
 
-        # 16. Legs crossed: 1 if knee x-ordering is opposite to hip x-ordering
-        legs_crossed = float((left_knee.x - right_knee.x) * (left_hip.x - right_hip.x) < 0)
-
-        # 17. Right wrist offset
-        right_wrist_offset = (right_wrist.x - mid_shoulder.x) / _norm(right_shoulder - left_shoulder)
-
-        # 18. Left wrist offset
-        left_wrist_offset = (left_wrist.x - mid_shoulder.x) / _norm(right_shoulder - left_shoulder)
 
         return np.array([
-            max_wrist_height,       # 1
-            vert_wrist_sep,         # 2
-            horiz_wrist_sep,        # 3
-            more_extended_elbow,    # 4
-            less_extended_elbow,    # 5
-            ext_asymmetry,          # 6
-            shoulder_angle,         # 7
-            hip_angle,              # 8
-            twist,                  # 9
-            torso_lean,             # 10
-            wrist_product,          # 11
-            cross_dist,             # 12
-            forearm_angle,          # 13
-            elbow_angle_diff,       # 14
-            wrist_vs_elbow,         # 15
-            legs_crossed,           # 16
-            right_wrist_offset,     # 17
-            left_wrist_offset,      # 18
+            max_wrist_height,   # 1
+            l_elbow_angle,      # 2
+            r_elbow_angle,      # 3
+            shoulder_angle,     # 4
+            torso_lean,         # 5
+            l_wrist_x,          # 6
+            r_wrist_x,          # 7
+            l_wrist_y,          # 8
+            r_wrist_y,          # 9
+            l_extension,        # 10
+            r_extension,        # 11
+            l_elbow_x,          # 12
+            r_elbow_x,          # 13
+            wrist_x_separation, # 14
         ], dtype = np.float32)
 
 
@@ -246,11 +223,15 @@ class PoseEstimator:
             ball_shot_frames: list[int], 
             player_bbox_detections: list[dict[int, BoundingBox]], 
             ball_bbox_detections: list[BoundingBox], 
-            classifier: ShotClassifier
+            classifier: ShotClassifier,
+            should_mirror: dict[int, bool]
         ) -> tuple[list[ShotType], list[int]]:
         """
         For each ball hit frame, samples up to 7 frames (frame - 3 to frame + 3), crops the hitting
         player, runs pose estimation on each crop, and majority-votes the shot type.
+
+        If far side XOR lefty evaluates to true for a player's id, the crop for that player before running it
+        through pose estimation is reversed. 
 
         Returns ShotType.UNKNOWN only if no pose is detected in any of the 7 frames.
         Ties are broken randomly.
@@ -287,6 +268,9 @@ class PoseEstimator:
                 crop: np.ndarray = video_frames[f][max(0, y1):y2, max(0, x1):x2]
                 if crop.size == 0:
                     continue
+
+                if should_mirror.get(hitting_player_id, False):
+                    crop = cv2.flip(crop, 1)
 
                 keypoints = self.get_keypoints(crop)
                 if keypoints is not None:

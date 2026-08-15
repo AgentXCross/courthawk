@@ -1,13 +1,26 @@
 """
 Data structures and their utility functions.
+- Handedness
+- CourtSide
 - Point
 - Line
 - BoundingBox
-""" 
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
+
+
+class Handedness(Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
+class CourtSide(Enum):
+    CLOSE = "close"
+    FAR = "far"
 
 
 @dataclass(frozen = True)
