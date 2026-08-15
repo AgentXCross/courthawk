@@ -4,7 +4,7 @@ Computer vision system for tennis that detects and tracks players and ball, esti
 
 This project is inspired by [this tutorial](https://www.youtube.com/watch?v=L23oIHZE14w). It has since been substantially expanded and reworked, with significant improvements to the code structure, system architecture, and computer vision methods.
 
-To Do: Change the XGBoost model to Multinomial Logistic Regression, For shot classification use 2 separate models based on which side of the court the player is, Continue building the frontend, Heatmap regression models to replace current ball tracking and court keypoints.
+To Do: Continue building the frontend, deploy it, Heatmap regression models to replace current ball tracking and court keypoints.
 
 <p align="center">
   <img src="courthawk_engine/data/output_videos/sinner_zverev_output.gif" width="70%">
@@ -12,7 +12,7 @@ To Do: Change the XGBoost model to Multinomial Logistic Regression, For shot cla
 
 ## How It Works
 
-The below is an analysis on how the system works when we run `python3 -m courthawk-engine.main`. The system works very similarly on the web app, except that only the bounding boxes and court keypoints are overlayed onto the video. The mini-court and statistics are displayed elsewhere on the frontend. However, the mathematical logic remains identical.
+The below is an analysis on how the system works when we run `python3 -m courthawk-engine.main`. The system works very similarly on the web app, except that only the bounding boxes and court keypoints are overlayed onto the video. The mini-court and statistics are displayed elsewhere on the frontend. However, the mathematical logic remains the same.
 
 ---
 
@@ -30,11 +30,11 @@ Player tracking is done by a pretrained `YOLOv8x` model. The model is directed t
 
 #### Player Selection
 
-The ball boys and chair umpire are likely to also be tracked by the model, so to select the actual players, we score every detected "person" using a weighted combination of 2 terms: the sum of the Euclidean distances from their foot position to their nearest 3 court keypoints, and the vertical (y) distance from their foot position to the nearest baseline. The 2 persons with the lowest score are selected as the players.
+The ball boys and chair umpire are likely to also be tracked by the model, so to select the actual players, we score every detected "person" using a weighted combination of 2 terms: the sum of the Euclidean distances from their foot position to their nearest 3 court keypoints, and the euclidean distance from their foot position to the nearest center hash mark. The 2 persons with the lowest score are selected as the players.
 
-$$\text{score} = \alpha \cdot (\text{sum of distances to nearest 3 keypoints}) + \beta \cdot (\text{y-distance to nearest baseline})$$
+$$\text{score} = \gamma \cdot (\alpha \cdot (\text{sum of distances to nearest 3 keypoints}) + \beta \cdot (\text{distance to nearest center hash mark}))$$
 
-with $\alpha = 0.2$ and $\beta = 0.8$ by default. The baseline term was added because ball boys and umpires are often positioned right next to a court corner keypoint, which the distance-only formula would otherwise mistake for a player standing on the court.
+with $\alpha = 0.2$ and $\beta = 0.8$ by default. The $\gamma$ parameter is 0.5 if the player is on the close side of the court and 1 otherwise. The sum of the Eucliden distances from the nearest 3 court keypoints provides a good measure of approxiamately how close a person is to the court. The distance to the nearest center hash mark is used to filter out ball boys and the chair umpire who might also be near the court. The $\gamma$ term is used because player selection occurs from the original TV-angle, and thus a fixed real-world distance corresponds to more pixels on the near side of the court than on the far side. The $\gamma$ term is important for ensuring ball boys on the far side of the court are not chosen as players.
 
 #### Interpolating Missing Detections
 
@@ -145,27 +145,22 @@ For each cropped frame, we run MediaPipe's Pose Estimation model. MediaPipe dete
 
 #### Feature Vector Extraction
 
-Rather than use the landmark positions directly, we extract a smaller set of features relevant to tennis that describe the players pose. The positions are centered at the players mid-shoulder position and then normalized by their torso length so that the representation is less sensitive to the player's size or distance from camera.
+Rather than use the landmark positions directly, we extract a smaller set of features relevant to tennis that describe the players pose. The positions are centered at the players mid-shoulder position and then normalized by their torso length so that the representation is less sensitive to the player's size or distance from camera. Below is a list of all the features extracted.
 
-1. Max wrist height: Higher of two wrists relative to the mid-shoulder
-2. Vertical wrist separation: Absolute difference between wrist y-positions
-3. Horizontal wrist separation: Absolute difference between wrist x-positions
-4. More extended arm elbow angle: Elbow angle (wrist -> elbow -> shoulder) of the arm with greater shoulder to wrist distance
-5. Less extended arm elbow anlge: Elbow angle of the other arm
-6. Arm extension asymmetry: Absolute difference in shoulder to wrist distance between the 2 arms
-7. Shoulder rotation angle: Angle of the shoulder line relative to the horizontal
-8. Hip rotation angle: Angle of the hip line relative to the horizontal
-9. Hip-shoulder twist: Shoulder rotation angle - hip rotation angle
-10. Torso lean: Angle of the mid-shoulder to mid-hip relative to the vertical
-11. Wrist x-coordinate produce: right wrist x-position * left wrist x-position
-12. Mininum cross body shoulder-to-wrist distance: min(dist(left wrist, right shoulder), dist(right wrist, left shoulder))
-13. Angle between forearm vectors: Angle between (left elbow to left wrist) and (right elbow to right wrist)
-14. Elbow angle difference: Absolute difference between left elbow and right elbow angle
-15. Wrist average height - elbow average height
-16. Legs crossed: Binary feature
-17. Right wrist offset: (Right wrist x-position - mid-shoulder x-position) / shoulder width
-18. Left wrist offset: (Left wrist x-position - mid-shoudler x-position) / shoulder width
-
+1. Max wrist height: Higher of two wrists relative to the mid-shoulder. Expectation is that the value is greater for a serve and lower for forehands and backhands.
+2. Left elbow angle: wrist -> elbow -> shoulder. Expectation is greater angle for serves compared to groundstrokes.
+3. Right elbow angle: wrist -> elbow -> shoulder. Expectation is greater angle for serves compared to groundstrokes.
+4. Shoulder tilt: Angle of the shoulder line relative to the horizontal. Expectation is greater angle for serves compared to groundstrokes. 
+5. Torso lean: Angle of the mid-shoulder to mid-hip relative to the vertical.
+6. Left wrist x-position: Expect positive for forehands, negative for backhands, and near 0 for serves.
+7. Right wrist x-position: Expect positive for forehands, negative for backhands, and near 0 for serves.
+8. Left wrist y-position: Expect higher for serve, lower for groundstrokes.
+9. Right wrist y-position: Expect higher for serve, lower for groundstrokes.
+10. Left arm extension: Norm of vector from left shoulder to left wrist.
+11. Right arm extension: Norm of vector from right shoulder to right wrist.
+12. Left elbow x-position: Same reasoning as left wrist x-position
+13. Right elbow x-position: Same reasoning as right wrist x-position
+14. Signed wrist separation: Expect largest separation magnitude for forehands and lowest separation magnitude for backhands.
 
 #### Softmax/Multinomial Logistic Regression
 
