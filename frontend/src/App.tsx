@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react'
 import { useVideoTime } from './hooks/useVideoTime'
-import type { ChangeEvent, DragEvent } from 'react'
+import type { ChangeEvent, DragEvent, MouseEvent } from 'react'
 import './App.css'
 import { analyzeVideo } from './api/analyze'
 import type { PointAnalysis } from './types/analysis'
 import MiniCourt from "./components/MiniCourt"
 import VideoPlayer from './components/VideoPlayer'
-import StatsTable from './components/StatsTable'
+import AnalysisTimeline from './components/AnalysisTimeline'
+import courthawkLogo from './assets/courthawk_logo.png'
 
 function App() {
   // UI state 
@@ -48,12 +49,29 @@ function App() {
     if (file) handleFile(file)
   }
 
+  async function handleTrySample(event: MouseEvent) {
+    // Stop this click from also triggering the dropzone's own onClick (which opens the file picker)
+    event.stopPropagation()
+
+    const response = await fetch('/sample-videos/sinner_zverev.mp4')
+    const blob = await response.blob()
+    const file = new File([blob], 'sinner_zverev.mp4', { type: 'video/mp4' })
+    handleFile(file)
+  }
+
   return (
     <div id="layout">
       <nav id="navbar">
-        <img id="navbar-logo" src="/assets/courthawk_logo.png" alt="CourtHawk logo" />
-        CourtHawk
+        <img id="navbar-logo" src={courthawkLogo} alt="CourtHawk logo" />
+        <a id="navbar-github" href="https://github.com/AgentXCross/courthawk" target="_blank" rel="noopener noreferrer">
+          GitHub
+        </a>
+        <div id="navbar-title">CourtHawk</div>
+        <div id="navbar-subtitle">Computer Vision Tennis System</div>
       </nav>
+      <section id="hero">
+        <p id="hero-status">Currently in development.</p>
+      </section>
       <div id="content">
         <section id="mini-court">
           <MiniCourt analysis={analysis} currentFrame={currentFrame}/>
@@ -79,6 +97,11 @@ function App() {
               <h2>{isLoading ? 'Running your point through CourtHawk' : 'Drop your point'}</h2>
               <p>{isLoading ? 'Breaking down every shot…' : 'Click or drag a video file to get started'}</p>
               {!isLoading && (
+                <button id="try-sample-button" onClick={handleTrySample}>
+                  Try this sample
+                </button>
+              )}
+              {!isLoading && (
                 <ul id="upload-requirements">
                   <li>Footage must be from the standard broadcast TV camera angle</li>
                   <li>Must contain one point only starting at the serve and ending when the point finishes</li>
@@ -91,7 +114,9 @@ function App() {
           )}
         </section>
       </div>
-      <section id="stats">{analysis && <StatsTable />}</section>
+      <section id="stats">
+        <AnalysisTimeline analysis={analysis} currentFrame={currentFrame} />
+      </section>
     </div>
   )
 }

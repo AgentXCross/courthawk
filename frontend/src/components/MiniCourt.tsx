@@ -69,7 +69,7 @@ function MiniCourt({ analysis, currentFrame }: MiniCourtProps) {
       viewBox={`${-PADDING} ${-PADDING} ${width + 2 * PADDING} ${length + 2 * PADDING}`}
       preserveAspectRatio="xMidYMid slice"
     >
-      <rect x={-PADDING} y={-PADDING} width={width + 2 * PADDING} height={length + 2 * PADDING} fill="#00adf2" /> {/*#63ab64 for green*/}
+      <rect x={-PADDING} y={-PADDING} width={width + 2 * PADDING} height={length + 2 * PADDING} fill="#00c5f1" /> {/*#63ab64 for green*/}
       <rect x={0} y={0} width={width} height={length} fill="#0165a1" />
 
       {COURT_LINES.map(([a, b], i) => (

@@ -8,15 +8,27 @@
   position: relative;
   background: #000002;
   padding: 0.25rem 2.5rem;
+  text-align: center;
+}
+
+#navbar-title {
   font-family: 'Anton SC', sans-serif;
   font-size: 6.69rem;
   letter-spacing: 0.00em;
   color: #CCFF00;
-  text-align: center;
   text-shadow:
     0 0 1px #CCFF00,
     0 0 2px #CCFF00,
     0 0 3px #CCFF00;
+}
+
+#navbar-subtitle {
+  font-family: 'Anton SC', sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.03em;
+  color: #c6c6c6;
+  margin-top: -1.5rem;
+  padding-bottom: 0.5rem;
 }
 
 #navbar-logo {
@@ -26,6 +38,39 @@
   transform: translateY(-50%);
   height: 177px;
   filter: drop-shadow(0 0 3px #CCFF00);
+}
+
+#navbar-github {
+  position: absolute;
+  right: 7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  color: #000;
+  font-family: 'Anton SC', sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.03em;
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+#navbar-github:hover {
+  background: #CCFF00;
+}
+
+#hero {
+  padding: 0.75rem 2.5rem;
+  text-align: center;
+}
+
+#hero-status {
+  font-family: 'Cal Sans', sans-serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: #7a7a7c;
+  margin: 0;
 }
 
 #content {
@@ -104,6 +149,24 @@
   font-size: 0.95rem;
 }
 
+#try-sample-button {
+  margin-top: 0.4rem;
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  color: #CCFF00;
+  border: 1.5px solid #CCFF00;
+  border-radius: 999px;
+  font-family: 'Cal Sans', sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#try-sample-button:hover {
+  background: #CCFF00;
+  color: #000;
+}
+
 #upload-requirements {
   margin: 0.5rem 0 0;
   padding: 0;
@@ -129,4 +192,94 @@
 
 #stats {
   flex: none;
+}
+
+#analysis-timeline {
+  position: relative;
+  margin: 3rem 1.5rem 1.5rem;
+  padding: 1.5rem 2rem;
+  background: #2c2c2e;
+  border-radius: 24px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  row-gap: 1.25rem;
+  column-gap: 1rem;
+  align-items: center;
+}
+
+.timeline-row-label {
+  font-family: 'Anton SC', sans-serif;
+  font-size: 1.15rem;
+  color: #a7a7a7;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.timeline-row-plot {
+  grid-column: 2;
+  width: 100%;
+  height: 40px;
+  display: block;
+}
+
+.timeline-row-plot.shot-track {
+  position: relative;
+}
+
+.shot-track-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #4a4a4c;
+  transform: translateY(-50%);
+}
+
+.shot-dot {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.timeline-row-plot-wrapper {
+  grid-column: 2;
+  position: relative;
+  width: 100%;
+  height: 120px;
+}
+
+.timeline-row-plot-wrapper svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.timeline-axis-label {
+  position: absolute;
+  left: 4px;
+  font-size: 0.65rem;
+  color: #7a7a7c;
+}
+
+.timeline-axis-label.max {
+  top: 0;
+}
+
+.timeline-axis-label.min {
+  bottom: 0;
+}
+
+#timeline-cursor-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none;
+  background: #CCFF00;
+  box-shadow: 0 0 6px #CCFF00;
 }
