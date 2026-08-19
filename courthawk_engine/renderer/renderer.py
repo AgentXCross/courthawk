@@ -9,7 +9,8 @@ import cv2
 
 from ..core import (
     Point,
-    BoundingBox
+    BoundingBox,
+    CourtSide
 )
 from ..pose_estimation import ShotType
 from ..minicourt import MiniCourt
@@ -35,17 +36,17 @@ class Renderer:
 
 
     def render(
-            self, 
+            self,
             video_frames: list[np.ndarray],
             court_keypoints: list[Point],
-            player_bbox_detections: list[dict[int, BoundingBox]],
+            player_bbox_detections: list[dict[CourtSide, BoundingBox]],
             ball_bbox_detections: list[BoundingBox],
-            player_point_detections_mini: list[dict[int, Point]], # homography already applied
+            player_point_detections_mini: list[dict[CourtSide, Point]], # homography already applied
             ball_point_detections_mini: list[Point], # homography already applied
             ball_shot_frames: list[int],
             shot_types: list[ShotType],
-            hitting_player_ids : list[int],
-            player_ids: list[int],
+            hitting_player_ids : list[CourtSide],
+            player_ids: list[CourtSide],
             mini_court: MiniCourt,
             player_shots_data: list[dict[str, int | float]],
             player_speeds_data: list[dict[str, int | float]]
@@ -99,9 +100,9 @@ class Renderer:
 
 
     def draw_player_bboxes(
-            self, 
-            video_frames: list[np.ndarray], 
-            player_bbox_detections: list[dict[int, BoundingBox]]
+            self,
+            video_frames: list[np.ndarray],
+            player_bbox_detections: list[dict[CourtSide, BoundingBox]]
         ) -> list[np.ndarray]:
         """Draws player bounding boxes on the output frames."""
         assert len(video_frames) == len(player_bbox_detections)
@@ -112,7 +113,7 @@ class Renderer:
             for player_id, bbox in player_bbox_dict.items():
                 cv2.putText(
                     frame,
-                    f"Player ID: {player_id}",
+                    f"Player: {player_id.value.capitalize()}",
                     (int(bbox.tl.x), int(bbox.tl.y - 10)),
                     self.font,
                     0.9,
@@ -133,12 +134,12 @@ class Renderer:
 
 
     def draw_shot_types(
-            self, 
+            self,
             video_frames: list[np.ndarray],
-            player_bbox_detections: list[dict[int, BoundingBox]],
+            player_bbox_detections: list[dict[CourtSide, BoundingBox]],
             ball_shot_frames: list[int],
             shot_types: list[ShotType],
-            hitting_player_ids : list[int]
+            hitting_player_ids : list[CourtSide]
         ) -> list[np.ndarray]:
         """
         Draws shot types when a player hits a shot.
@@ -147,8 +148,8 @@ class Renderer:
         assert len(video_frames) == len(player_bbox_detections)
         assert len(ball_shot_frames) == len(shot_types) and len(ball_shot_frames) == len(hitting_player_ids)
 
-        # active maps a frame number to a list of which player and shot type 
-        active: dict[int, list[tuple[int, ShotType]]] = {}
+        # active maps a frame number to a list of which player and shot type
+        active: dict[int, list[tuple[CourtSide, ShotType]]] = {}
 
         for shot_frame, shot_type, player_id in zip(ball_shot_frames, shot_types, hitting_player_ids):
             for frame in range(
@@ -280,9 +281,9 @@ class Renderer:
 
 
     def draw_players_on_minicourt(
-            self, 
-            video_frames: list[np.ndarray], 
-            player_mini_court_positions: list[dict[int, Point]],
+            self,
+            video_frames: list[np.ndarray],
+            player_mini_court_positions: list[dict[CourtSide, Point]],
         ):
         """Draws the players on the minicourt as dots."""
         assert len(video_frames) == len(player_mini_court_positions)
@@ -312,11 +313,11 @@ class Renderer:
         self,
         video_frames: list[np.ndarray],
         player_shots_data: list[dict[str, int | float]], # keys are frame, player_who_hit, ball_speed_kmh
-        player_speeds_data: list[dict[str, int | float]], # keys are frame, player_{pid}_speed_kmh
-        player_ids: list[int]
+        player_speeds_data: list[dict[str, int | float]], # keys are frame, player_{side.value}_speed_kmh
+        player_ids: list[CourtSide]
     ) -> list[np.ndarray]:
         """Displays player and ball speed stats on the output video."""
-        p1_id, p2_id = player_ids[0], player_ids[1]
+        p1_id, p2_id = CourtSide.CLOSE, CourtSide.FAR
         shot_idx = 0
         speed_idx = 0
         p1_shot_speed = p2_shot_speed = None
@@ -346,14 +347,14 @@ class Renderer:
             # track last per-stride speed per player
             while speed_idx < len(player_speeds_data) and player_speeds_data[speed_idx]['frame'] <= frame_num:
                 s = player_speeds_data[speed_idx]
-                p1_speed = s[f'player_{p1_id}_speed_kmh']
-                p2_speed = s[f'player_{p2_id}_speed_kmh']
+                p1_speed = s[f'player_{p1_id.value}_speed_kmh']
+                p2_speed = s[f'player_{p2_id.value}_speed_kmh']
                 speed_idx += 1
 
             def display_val(val): return f"{val:.1f} km/h" if val is not None else "N/A"
 
             rows = [
-                ("", f"Player {p1_id}", f"Player {p2_id}"),
+                ("", p1_id.value.capitalize(), p2_id.value.capitalize()),
                 ("Last Shot Speed", display_val(p1_shot_speed), display_val(p2_shot_speed)),
                 ("Player Speed", display_val(p1_speed), display_val(p2_speed)),
             ]

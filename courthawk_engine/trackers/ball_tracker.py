@@ -19,6 +19,7 @@ from scipy.signal import find_peaks
 from ..core import (
     Point,
     BoundingBox,
+    CourtSide,
     euclidean_distance
 )
 
@@ -127,9 +128,9 @@ class BallTracker:
 
     
     def get_ball_shot_frames(
-            self, 
-            ball_positions: list[BoundingBox], 
-            player_detections: list[dict[int, BoundingBox]]
+            self,
+            ball_positions: list[BoundingBox],
+            player_detections: list[dict[CourtSide, BoundingBox]]
         ) -> list[int]:
         """
         Determines the frame numbers where the ball is hit by a player.
@@ -157,21 +158,18 @@ class BallTracker:
         df_ball_positions["mid_x"] = (df_ball_positions["x1"] + df_ball_positions["x2"]) / 2
         df_ball_positions["mid_y"] = (df_ball_positions["y1"] + df_ball_positions["y2"]) / 2
 
-        # Build player position DataFrame, one row per frame, one column set per player
-        player_ids = sorted({ # Grab player_ids, this ensures we don't miss any players
-            player_id
-            for frame_detections in player_detections
-            for player_id in frame_detections
-        })
-        assert len(player_ids) == 2
+        # Build player position DataFrame, one row per frame, one column set per side.
+        sides_seen = {side for frame_detections in player_detections for side in frame_detections}
+        player_sides = [side for side in CourtSide if side in sides_seen]
+        assert len(player_sides) == 2
 
         player_position_rows = []
-        for frame in player_detections: # A frame is a dict[int, BoundingBox]
+        for frame in player_detections: # A frame is a dict[CourtSide, BoundingBox]
             row = {}
-            for player_id, bbox in frame.items():
+            for side, bbox in frame.items():
                 center_point: Point = bbox.center
-                row[f"p{player_id}_mid_x"] = center_point.x
-                row[f"p{player_id}_mid_y"] = center_point.y
+                row[f"p{side.value}_mid_x"] = center_point.x
+                row[f"p{side.value}_mid_y"] = center_point.y
             player_position_rows.append(row)
 
         df_players = (
@@ -192,10 +190,10 @@ class BallTracker:
 
             distances_this_frame: list[float] = [] # list[float, float]
 
-            for player_id in player_ids:
+            for side in player_sides:
                 player = Point(
-                    x = df_players.at[frame_index, f"p{player_id}_mid_x"],
-                    y = df_players.at[frame_index, f"p{player_id}_mid_y"]
+                    x = df_players.at[frame_index, f"p{side.value}_mid_x"],
+                    y = df_players.at[frame_index, f"p{side.value}_mid_y"]
                 )
 
                 distances_this_frame.append(

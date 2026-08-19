@@ -1,7 +1,7 @@
-import type { PlayerSpeedSample } from '../types/analysis'
+import type { CourtSide, PlayerSpeedSample } from '../types/analysis'
 
 interface PlayerSpeedTrackProps {
-  playerIds: number[]
+  playerIds: CourtSide[]
   playerSpeeds: PlayerSpeedSample[]
   totalFrames: number
 }
@@ -39,7 +39,7 @@ function PlayerSpeedTrack({ playerIds, playerSpeeds, totalFrames }: PlayerSpeedT
           {playerIds.map((playerId, index) => {
             const samples = playerSpeeds
               .map((sample) => {
-                const speed = sample.speeds_kmh[String(playerId)]
+                const speed = sample.speeds_kmh[playerId]
                 if (speed === undefined) return null
                 const x = totalFrames > 0 ? (sample.frame / totalFrames) * 400 : 0
                 const y = 60 - (speed / axisMax) * 60

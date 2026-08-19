@@ -17,6 +17,7 @@ from pathlib import Path
 from ..core import (
     Point,
     BoundingBox,
+    CourtSide,
     Line
 )
 from .shot_classifier import ShotClassifier, ShotType
@@ -218,14 +219,14 @@ class PoseEstimator:
 
 
     def classify_shots(
-            self, 
-            video_frames: list[np.ndarray], 
-            ball_shot_frames: list[int], 
-            player_bbox_detections: list[dict[int, BoundingBox]], 
-            ball_bbox_detections: list[BoundingBox], 
+            self,
+            video_frames: list[np.ndarray],
+            ball_shot_frames: list[int],
+            player_bbox_detections: list[dict[CourtSide, BoundingBox]],
+            ball_bbox_detections: list[BoundingBox],
             classifier: ShotClassifier,
-            should_mirror: dict[int, bool]
-        ) -> tuple[list[ShotType], list[int]]:
+            should_mirror: dict[CourtSide, bool]
+        ) -> tuple[list[ShotType], list[CourtSide]]:
         """
         For each ball hit frame, samples up to 7 frames (frame - 3 to frame + 3), crops the hitting
         player, runs pose estimation on each crop, and majority-votes the shot type.
@@ -240,7 +241,7 @@ class PoseEstimator:
         
         num_frames = len(video_frames)
         shot_types: list[ShotType] = []
-        hitting_player_ids: list[int] = []
+        hitting_player_ids: list[CourtSide] = []
 
         for frame_num in ball_shot_frames:
             ball_box = ball_bbox_detections[frame_num]

@@ -37,14 +37,10 @@ def main():
     player_tracker_model_path: Path = ENGINE_DIR / "models" / "yolov8x_player_tracker.pt"
     ball_tracker_model_path: Path = ENGINE_DIR / "models" / "yolo5_ball_detector.pt"
     pose_estimator_model_path: Path = ENGINE_DIR / "models" / "pose_landmarker.task"
-    # shot_classifier.pkl is stale (trained on the old 18-feature get_keypoints()) and will
-    # crash against the current 14-feature output. shot_classifier_random_forest.pkl and
-    # shot_classifier_log_regression.pkl are both trained on the current feature set and
-    # interchangeable here — swap the filename to switch models.
     shot_classifier_model_path: Path = ENGINE_DIR / "models" / "shot_classifier_random_forest.pkl"
     output_video_path: Path = ENGINE_DIR / "data" / "output_videos" / "sinner_zverev_output.mp4"
 
-    PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
+    PLAYER_SPEED_STRIDE = 5  # frames between player speed samples
 
     COURT_SIDE_HANDEDNESS: dict[CourtSide, Handedness] = {
         CourtSide.CLOSE: Handedness.RIGHT,
@@ -78,16 +74,13 @@ def main():
     ]
     court_keypoints: list[Point] = court_line_detector.predict_average(sample_frames)
 
-    player_bbox_detections, player_ids = player_tracker.choose_and_filter_players(court_keypoints, player_bbox_detections)
-    # player_bbox_detections is a list[dict[int, BoundingBox]]
-
-    player_sides: dict[int, CourtSide] = player_tracker.determine_court_sides(court_keypoints, player_bbox_detections, player_ids)
-    print(f"Player sides: {player_sides}")
+    player_bbox_detections: list[dict[CourtSide, BoundingBox]] = player_tracker.choose_and_filter_players(court_keypoints, player_bbox_detections)
+    player_bbox_detections = player_tracker.interpolate_player_positions(player_bbox_detections)
 
     # Mirror the crop before pose estimation when far side XOR left handed
-    should_mirror: dict[int, bool] = {
-        pid: (player_sides[pid] == CourtSide.FAR) ^ (COURT_SIDE_HANDEDNESS[player_sides[pid]] == Handedness.LEFT)
-        for pid in player_ids
+    should_mirror: dict[CourtSide, bool] = {
+        side: (side == CourtSide.FAR) ^ (COURT_SIDE_HANDEDNESS[side] == Handedness.LEFT)
+        for side in CourtSide
     }
     print(f"Should mirror: {should_mirror}")
 
@@ -118,7 +111,7 @@ def main():
         ball_shot_frames,
         shot_types,
         hitting_player_ids,
-        player_ids,
+        list(CourtSide),
         mini_court,
         player_shots_data,
         player_speed_stats

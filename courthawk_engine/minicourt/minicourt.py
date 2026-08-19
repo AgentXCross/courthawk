@@ -13,7 +13,8 @@ from ..core import (
     constants,
     Point,
     Line,
-    BoundingBox
+    BoundingBox,
+    CourtSide
 )
 
 
@@ -240,10 +241,10 @@ class MiniCourt:
 
     def convert_bbox_to_mini_court_coords(
             self,
-            player_boxes: list[dict[int, BoundingBox]],
+            player_boxes: list[dict[CourtSide, BoundingBox]],
             ball_boxes: list[BoundingBox],
             original_court_keypoints: list[Point]
-    ) -> tuple[list[dict[int, Point]], list[Point]]:
+    ) -> tuple[list[dict[CourtSide, Point]], list[Point]]:
         """
         Converts all player bounding boxes and ball bounding boxes from the original
         court to the mini-court display.
@@ -270,10 +271,10 @@ class MiniCourt:
 
 
     def get_shot_stats(
-            self, 
+            self,
             ball_shot_frames: list[int],
-            player_mini_court_detections: list[dict[int, Point]], 
-            ball_mini_court_detections: list[Point], 
+            player_mini_court_detections: list[dict[CourtSide, Point]],
+            ball_mini_court_detections: list[Point],
             fps: float
         ) -> list[dict[str, int | float]]:
         """
@@ -314,8 +315,8 @@ class MiniCourt:
 
     
     def get_player_speed_stats(
-            self, 
-            player_mini_court_detections: list[dict[int, Point]], 
+            self,
+            player_mini_court_detections: list[dict[CourtSide, Point]],
             fps: float,
             stride: int
         ) -> list[dict[str, int | float]]:
@@ -328,21 +329,21 @@ class MiniCourt:
         assert len(player_mini_court_detections) > 0
 
         speed_stats: list[dict[str, int | float]] = []
-        player_ids = list(player_mini_court_detections[0].keys())
+        player_sides = list(player_mini_court_detections[0].keys())
         time_seconds = stride / fps
 
         for frame_num in range(stride, len(player_mini_court_detections), stride):
             stat = {'frame': frame_num}
 
-            for pid in player_ids:
-                if pid in player_mini_court_detections[frame_num] and pid in player_mini_court_detections[frame_num - stride]:
+            for side in player_sides:
+                if side in player_mini_court_detections[frame_num] and side in player_mini_court_detections[frame_num - stride]:
                     dist = euclidean_distance(
-                        player_mini_court_detections[frame_num - stride][pid],
-                        player_mini_court_detections[frame_num][pid]
+                        player_mini_court_detections[frame_num - stride][side],
+                        player_mini_court_detections[frame_num][side]
                     )
-                    stat[f'player_{pid}_speed_kmh'] = (self.convert_pixels_to_meters(dist) / time_seconds) * 3.6
+                    stat[f'player_{side.value}_speed_kmh'] = (self.convert_pixels_to_meters(dist) / time_seconds) * 3.6
                 else:
-                    stat[f'player_{pid}_speed_kmh'] = 0.0
+                    stat[f'player_{side.value}_speed_kmh'] = 0.0
             speed_stats.append(stat)
 
         return speed_stats

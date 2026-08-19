@@ -68,10 +68,8 @@ def build_dataset(input_video: Video) -> None:
     ]
     court_keypoints: list[Point] = court_keypoint_detector.predict_average(sample_frames)
 
-    player_bbox_detections, player_ids = player_tracker.choose_and_filter_players(court_keypoints, player_bbox_detections)
-
-    player_sides = player_tracker.determine_court_sides(court_keypoints, player_bbox_detections, player_ids)
-    close_side_player_id = next(pid for pid, side in player_sides.items() if side == CourtSide.CLOSE)
+    player_bbox_detections: list[dict[CourtSide, BoundingBox]] = player_tracker.choose_and_filter_players(court_keypoints, player_bbox_detections)
+    player_bbox_detections = player_tracker.interpolate_player_positions(player_bbox_detections)
 
     ball_shot_frames: list[int] = ball_tracker.get_ball_shot_frames(ball_bbox_detections, player_bbox_detections)
 
@@ -95,11 +93,11 @@ def build_dataset(input_video: Video) -> None:
                 )
             )
 
-            if hitting_player_id != close_side_player_id:
+            if hitting_player_id != CourtSide.CLOSE:
                 continue
 
             for f in range(max(0, frame_num - 2), min(n_frames, frame_num + 3)):
-                player_bbox = player_bbox_detections[f].get(close_side_player_id)
+                player_bbox = player_bbox_detections[f].get(CourtSide.CLOSE)
                 if player_bbox is None:
                     continue
 

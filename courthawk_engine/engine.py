@@ -34,14 +34,14 @@ from .core import (
 ENGINE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = ENGINE_DIR / "models"
 OUTPUT_DIR = ENGINE_DIR / "data" / "output_videos"
-PLAYER_SPEED_STRIDE = 20  # frames between player speed samples
+PLAYER_SPEED_STRIDE = 5  # frames between player speed samples
 DEVICE = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
 
 @dataclass
 class Shot:
     frame: int
-    player_id: int
+    player_id: CourtSide
     shot_type: ShotType
     ball_speed_kmh: float
 
@@ -49,7 +49,7 @@ class Shot:
 @dataclass
 class PlayerSpeedSample:
     frame: int
-    speeds_kmh: dict[int, float] # player_id -> speed at this frame
+    speeds_kmh: dict[CourtSide, float] # player_id -> speed at this frame
 
 
 @dataclass
@@ -63,8 +63,8 @@ class PointAnalysis:
     fps: float
 
     real_court_keypoints: list[Point]
-    player_ids: list[int]
-    player_court_foot_positions: list[dict[int, Point]]
+    player_ids: list[CourtSide]
+    player_court_foot_positions: list[dict[CourtSide, Point]]
     ball_court_positions: list[Point]
 
     shots: list[Shot]
@@ -173,17 +173,16 @@ def analyze_point(
     ]
     detected_court_keypoints = _court_keypoint_detector().predict_average(sample_frames)
 
-    player_bbox_detections, player_ids = player_tracker.choose_and_filter_players(
+    player_bbox_detections: list[dict[CourtSide, BoundingBox]] = player_tracker.choose_and_filter_players(
         detected_court_keypoints,
         player_bbox_detections
     )
-
-    player_sides = player_tracker.determine_court_sides(detected_court_keypoints, player_bbox_detections, player_ids)
+    player_bbox_detections = player_tracker.interpolate_player_positions(player_bbox_detections)
 
     # Mirror the crop before pose estimation when far side XOR left handed
-    should_mirror: dict[int, bool] = {
-        pid: (player_sides[pid] == CourtSide.FAR) ^ (court_side_handedness[player_sides[pid]] == Handedness.LEFT)
-        for pid in player_ids
+    should_mirror: dict[CourtSide, bool] = {
+        side: (side == CourtSide.FAR) ^ (court_side_handedness[side] == Handedness.LEFT)
+        for side in CourtSide
     }
 
     ball_shot_frames = ball_tracker.get_ball_shot_frames(ball_bbox_detections, player_bbox_detections)
@@ -201,13 +200,13 @@ def analyze_point(
     real_court_keypoints = _real_court_keypoints()
     H = _get_homography(detected_court_keypoints, real_court_keypoints)
 
-    player_court_foot_positions: list[dict[int, Point]] = []
+    player_court_foot_positions: list[dict[CourtSide, Point]] = []
     ball_court_positions: list[Point] = []
 
     for frame_num, player_bboxes_this_frame in enumerate(player_bbox_detections):
         player_court_foot_positions.append({
-            player_id: _transform_point(bbox.foot, H)
-            for player_id, bbox in player_bboxes_this_frame.items()
+            side: _transform_point(bbox.foot, H)
+            for side, bbox in player_bboxes_this_frame.items()
         })
 
         ball_court_positions.append(
@@ -242,18 +241,18 @@ def analyze_point(
     # Player speed stats
     player_speeds: list[PlayerSpeedSample] = []
     for frame_num in range(PLAYER_SPEED_STRIDE, len(player_court_foot_positions), PLAYER_SPEED_STRIDE):
-        speeds_kmh: dict[int, float] = {}
+        speeds_kmh: dict[CourtSide, float] = {}
         time_seconds = PLAYER_SPEED_STRIDE / video.fps
 
-        for player_id in player_ids:
-            prev = player_court_foot_positions[frame_num - PLAYER_SPEED_STRIDE].get(player_id)
-            curr = player_court_foot_positions[frame_num].get(player_id)
+        for side in CourtSide:
+            prev = player_court_foot_positions[frame_num - PLAYER_SPEED_STRIDE].get(side)
+            curr = player_court_foot_positions[frame_num].get(side)
 
             if prev is not None and curr is not None:
                 distance_meters = euclidean_distance(prev, curr)
-                speeds_kmh[player_id] = (distance_meters / time_seconds) * 3.6
+                speeds_kmh[side] = (distance_meters / time_seconds) * 3.6
             else:
-                speeds_kmh[player_id] = 0.0
+                speeds_kmh[side] = 0.0
 
         player_speeds.append(PlayerSpeedSample(frame_num, speeds_kmh))
 
@@ -277,7 +276,7 @@ def analyze_point(
         annotated_video_path = annotated_video_path,
         fps = video.fps,
         real_court_keypoints = real_court_keypoints,
-        player_ids = player_ids,
+        player_ids = list(CourtSide),
         player_court_foot_positions = player_court_foot_positions,
         ball_court_positions = ball_court_positions,
         shots = shots,

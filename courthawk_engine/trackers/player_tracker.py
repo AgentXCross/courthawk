@@ -14,6 +14,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import pandas as pd
 
 from ..core import (
     BoundingBox,
@@ -38,92 +39,88 @@ class PlayerTracker:
     """
     Tracks players over the frames of the video.
 
-    determine_court_sides() determines which side a player is on, either close or far.
-
-    detect_frames() should be run first. It runs the YOLO model on all frames 
-    and only tracks the "person" class. 
+    detect_frames() should be run first. It runs the YOLO model on all frames
+    and only tracks the "person" class.
 
     choose_and_filter_players() should be run after. It requires the court keypoints.
+    It also determines which side of the court each player is on and returns their
+    bounding boxes keyed by CourtSide.
     """
     def __init__(self, model_path: Path, device: str = "cpu"):
         self.model: YOLO = YOLO(model_path)
         self.device: str = device
 
 
-    def determine_court_sides(
+    def _determine_track_id_sides(
             self,
             court_keypoints: list[Point],
-            player_bbox_detections: list[dict[int, BoundingBox]],
-            player_ids: list[int]
+            selection_frame: dict[int, BoundingBox],
+            chosen_players: list[int]
     ) -> dict[int, CourtSide]:
         """
-        Determines which side of the court each player is on.
-        This is only calculated once on the first frame.
-        Returns a dict mapping player_id to which side of the court they are on.
-
-        Takes pixel-space court_keypoints and player_bbox_detections (the same data
-        choose_players() uses, before any homography to real-world meters), so this same
-        function works whether it's called from engine.py or main.py, since both already
-        compute pixel-space keypoints and player detections independently.
+        Determines which side of the court each of the 2 chosen track IDs is on, using
+        their positions on selection_frame.
+        Returns a dict mapping track_id to CourtSide.
         """
-        assert(len(player_ids) == 2)
+        assert(len(chosen_players) == 2)
         assert(len(court_keypoints) == 14)
-        assert(len(player_bbox_detections) > 0)
 
         player_id_to_side: dict[int, CourtSide] = {}
 
-        first_frame_bboxes: dict[int, BoundingBox] = player_bbox_detections[0]
-
-        player_1_foot_position: Point = first_frame_bboxes[player_ids[0]].foot
-        player_2_foot_position: Point = first_frame_bboxes[player_ids[1]].foot
+        player_1_foot_position: Point = selection_frame[chosen_players[0]].foot
+        player_2_foot_position: Point = selection_frame[chosen_players[1]].foot
 
         if _is_close_side(player_1_foot_position, court_keypoints):
-            player_id_to_side[player_ids[0]] = CourtSide.CLOSE
+            player_id_to_side[chosen_players[0]] = CourtSide.CLOSE
         else:
-            player_id_to_side[player_ids[0]] = CourtSide.FAR
+            player_id_to_side[chosen_players[0]] = CourtSide.FAR
 
         if _is_close_side(player_2_foot_position, court_keypoints):
-            if player_id_to_side[player_ids[0]] == CourtSide.CLOSE:
+            if player_id_to_side[chosen_players[0]] == CourtSide.CLOSE:
                 print(f"Players were determined to be on the same side. Overriding one player so they are on opposite sides.")
-                player_id_to_side[player_ids[1]] = CourtSide.FAR
+                player_id_to_side[chosen_players[1]] = CourtSide.FAR
             else:
-                player_id_to_side[player_ids[1]] = CourtSide.CLOSE
+                player_id_to_side[chosen_players[1]] = CourtSide.CLOSE
         else:
-            if player_id_to_side[player_ids[0]] == CourtSide.FAR:
+            if player_id_to_side[chosen_players[0]] == CourtSide.FAR:
                 print(f"Players were determined to be on the same side. Overriding one player so they are on opposite sides.")
-                player_id_to_side[player_ids[1]] = CourtSide.CLOSE
+                player_id_to_side[chosen_players[1]] = CourtSide.CLOSE
             else:
-                player_id_to_side[player_ids[1]] = CourtSide.FAR
+                player_id_to_side[chosen_players[1]] = CourtSide.FAR
 
         return player_id_to_side
 
 
     def choose_and_filter_players(
-            self, 
-            court_keypoints: list[Point], 
+            self,
+            court_keypoints: list[Point],
             player_bbox_detections: list[dict[int, BoundingBox]] # one dict per frame mapping track ID to their BoundingBox
-        ) -> tuple[list[dict[int, BoundingBox]], list[int]]:
+        ) -> list[dict[CourtSide, BoundingBox]]:
         """
-        Chooses the players using the first frame with at least 2 confirmed detections
-        (the tracker may not have confirmed any track IDs yet on frame 0 itself). Calls
-        choose_players.
-
-        Filters and returns the player_detections dict, only keeping the indices of the chosen players.
-        Also returns the indices of the chosen players.
+        Chooses the 2 players using the first frame with at least 2 confirmed detections,
+        determines which side of the court each is on, and returns their bounding boxes re-keyed by
+        CourtSide instead of by raw track ID.
+        
+        CourtSide.CLOSE and CourtSide.FAR are the player identifiers used everywhere downstream of this point.
         """
         selection_frame: dict[int, BoundingBox] = next(
             (player_dict for player_dict in player_bbox_detections if len(player_dict) >= 2),
             player_bbox_detections[0]
         )
         chosen_players: list[int] = self.choose_players(court_keypoints, selection_frame)
+        track_id_to_side = self._determine_track_id_sides(court_keypoints, selection_frame, chosen_players)
 
-        filtered_player_detections: list[dict[int, BoundingBox]] = []
+        filtered_player_detections: list[dict[CourtSide, BoundingBox]] = []
 
         for player_dict in player_bbox_detections:
-            filtered_player_dict = {track_id: bbox for track_id, bbox in player_dict.items() if track_id in chosen_players}
+            filtered_player_dict = {
+                track_id_to_side[track_id]: bbox
+                for track_id, bbox in player_dict.items()
+                if track_id in track_id_to_side
+            }
             filtered_player_detections.append(filtered_player_dict)
 
-        return filtered_player_detections, chosen_players
+        return filtered_player_detections
 
 
     def choose_players(
@@ -180,6 +177,36 @@ class PlayerTracker:
         scores.sort(key = lambda x: x[1])
         chosen_players = [scores[0][0], scores[1][0]]
         return chosen_players
+
+
+    def interpolate_player_positions(
+            self,
+            player_bbox_detections: list[dict[CourtSide, BoundingBox]]
+    ) -> list[dict[CourtSide, BoundingBox]]:
+        """
+        Forward/backward fills and interpolates player bounding boxes for frames where the player
+        wasn't detected by the tracker. 
+        """
+        num_frames: int = len(player_bbox_detections)
+        interpolated: list[dict[CourtSide, BoundingBox]] = [{} for _ in range(num_frames)]
+
+        for side in CourtSide:
+            positions_as_list: list[tuple[float, float, float, float]] = [
+                (frame[side].tl.x, frame[side].tl.y, frame[side].br.x, frame[side].br.y)
+                if side in frame
+                else (None, None, None, None)
+                for frame in player_bbox_detections
+            ]
+
+            df = pd.DataFrame(positions_as_list, columns = ["x1", "y1", "x2", "y2"])
+            df = df.interpolate().bfill().ffill()
+
+            for frame_num, (x1, y1, x2, y2) in enumerate(df.to_numpy().tolist()):
+                interpolated[frame_num][side] = BoundingBox(
+                    Point(x1, y1), Point(x2, y2)
+                )
+                
+        return interpolated
 
 
     def detect_frames(
