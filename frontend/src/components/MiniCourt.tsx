@@ -1,15 +1,11 @@
 import type { CourtSide, Point, PointAnalysis } from '../types/analysis'
+import { PLAYER_COLORS } from '../constants/playerColors'
 
 interface MiniCourtProps {
   analysis: PointAnalysis | null
   currentFrame: number
 }
 
-// Matches PlayerSpeedTrack's color convention (close = pink, far = blue)
-const PLAYER_COLORS: Record<CourtSide, string> = {
-  close: '#DF1AA0',
-  far: '#00ADF2',
-}
 const PADDING = 5 // meters of extra space around the court, for players standing behind the baseline
 
 // Mirrors engine.py's _real_court_keypoints(). That function only ever depends on fixed
@@ -96,10 +92,10 @@ function MiniCourt({ analysis, currentFrame }: MiniCourtProps) {
 
       {analysis &&
         (Object.entries(playerPositions) as [CourtSide, Point][]).map(([side, point]) => (
-          <circle key={side} cx={point.x} cy={point.y} r={0.3} fill={PLAYER_COLORS[side]} />
+          <circle key={side} cx={point.x} cy={point.y} r={0.4} fill={PLAYER_COLORS[side]} stroke="black" strokeWidth={0.1} />
         ))}
 
-      {analysis && ballPosition && <circle cx={ballPosition.x} cy={ballPosition.y} r={0.3} fill="#CCFF00" />}
+      {analysis && ballPosition && <circle cx={ballPosition.x} cy={ballPosition.y} stroke="black" strokeWidth={0.1} r={0.3} fill="#CCFF00" />}
     </svg>
   )
 }

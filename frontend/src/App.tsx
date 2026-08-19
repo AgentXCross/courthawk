@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useVideoTime } from './hooks/useVideoTime'
 import type { ChangeEvent, DragEvent, MouseEvent } from 'react'
 import './App.css'
-import { analyzeVideo } from './api/analyze'
+import { analyzeVideo, getSampleAnalysis } from './api/analyze'
 import type { PointAnalysis } from './types/analysis'
 import MiniCourt from "./components/MiniCourt"
 import VideoPlayer from './components/VideoPlayer'
@@ -53,10 +53,17 @@ function App() {
     // Stop this click from also triggering the dropzone's own onClick (which opens the file picker)
     event.stopPropagation()
 
-    const response = await fetch('/sample-videos/sinner_zverev.mp4')
-    const blob = await response.blob()
-    const file = new File([blob], 'sinner_zverev.mp4', { type: 'video/mp4' })
-    handleFile(file)
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const result = await getSampleAnalysis()
+      setAnalysis(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load sample')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

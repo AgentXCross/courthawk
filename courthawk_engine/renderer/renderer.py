@@ -27,12 +27,19 @@ class Renderer:
     def __init__(
             self, 
             font = cv2.FONT_HERSHEY_TRIPLEX,
-            color_1: tuple = (1, 255, 214), # Neon yellow
-            color_2: tuple = (140, 0, 236), # Hot pink
+            color_1: tuple = (1, 255, 214),     # Neon yellow
+            color_2: tuple = (140, 0, 236),     # Hot pink
+            color_3: tuple = (90, 230, 0),      # Green
         ):
         self.font = font
         self.color_1 = color_1
         self.color_2 = color_2
+        self.color_3 = color_3
+
+
+    def _player_color(self, side: CourtSide) -> tuple:
+        """Close side is color_3 (green), far side is color_2 (hot pink)."""
+        return self.color_3 if side == CourtSide.CLOSE else self.color_2
 
 
     def render(
@@ -111,20 +118,22 @@ class Renderer:
 
         for frame, player_bbox_dict in zip(video_frames, player_bbox_detections):
             for player_id, bbox in player_bbox_dict.items():
+                color = self._player_color(player_id)
+
                 cv2.putText(
                     frame,
                     f"Player: {player_id.value.capitalize()}",
                     (int(bbox.tl.x), int(bbox.tl.y - 10)),
                     self.font,
                     0.9,
-                    self.color_2,
+                    color,
                     2
                 )
                 cv2.rectangle(
                     frame,
                     (int(bbox.tl.x), int(bbox.tl.y)),
                     (int(bbox.br.x), int(bbox.br.y)),
-                    self.color_2,
+                    color,
                     2
                 )
 
@@ -171,7 +180,7 @@ class Renderer:
                         (int(bbox.tl.x), int(bbox.br.y + 25)),
                         self.font,
                         0.9,
-                        self.color_2,
+                        self._player_color(player_id),
                         2
                     )
 
@@ -289,8 +298,8 @@ class Renderer:
         assert len(video_frames) == len(player_mini_court_positions)
 
         for frame_num, frame in enumerate(video_frames):
-            for _, point_position in player_mini_court_positions[frame_num].items():
-                cv2.circle(frame, (int(point_position.x), int(point_position.y)), 10, self.color_2, -1)
+            for side, point_position in player_mini_court_positions[frame_num].items():
+                cv2.circle(frame, (int(point_position.x), int(point_position.y)), 10, self._player_color(side), -1)
 
         return video_frames
 

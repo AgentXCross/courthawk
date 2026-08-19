@@ -1,4 +1,5 @@
 import type { CourtSide, PlayerSpeedSample } from '../types/analysis'
+import { PLAYER_COLORS } from '../constants/playerColors'
 
 interface PlayerSpeedTrackProps {
   playerIds: CourtSide[]
@@ -6,10 +7,7 @@ interface PlayerSpeedTrackProps {
   totalFrames: number
 }
 
-const PLAYER_COLORS = ['#DF1AA0', '#00ADF2']
-
-// Step ("staircase") line instead of connecting points directly — gives a blocky,
-// bar-chart-like silhouette while still being a thin stroked line, not filled bars.
+// Step ("staircase") line
 function buildStepPoints(samples: { x: number; y: number }[]): string {
   if (samples.length === 0) return ''
 
@@ -36,7 +34,7 @@ function PlayerSpeedTrack({ playerIds, playerSpeeds, totalFrames }: PlayerSpeedT
         <span className="timeline-axis-label min">0</span>
         <svg viewBox="0 0 400 60" preserveAspectRatio="none">
           <line x1={0} y1={60} x2={400} y2={60} stroke="#4a4a4c" strokeWidth={1} />
-          {playerIds.map((playerId, index) => {
+          {playerIds.map((playerId) => {
             const samples = playerSpeeds
               .map((sample) => {
                 const speed = sample.speeds_kmh[playerId]
@@ -52,7 +50,7 @@ function PlayerSpeedTrack({ playerIds, playerSpeeds, totalFrames }: PlayerSpeedT
                 key={playerId}
                 points={buildStepPoints(samples)}
                 fill="none"
-                stroke={PLAYER_COLORS[index] ?? 'gray'}
+                stroke={PLAYER_COLORS[playerId]}
                 strokeWidth={1.2}
               />
             )

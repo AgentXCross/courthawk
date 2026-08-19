@@ -22,3 +22,17 @@ export async function analyzeVideo(file: File): Promise<PointAnalysis> {
 
     return response.json() as Promise<PointAnalysis>
 }
+
+// Loads the pre-computed PointAnalysis for the sample video, bundled as a static file in
+// frontend/public/. Instant, unlike analyzeVideo(), no pipeline run, just a JSON fetch.
+// Regenerate this file with backend/generate_sample_analysis.py if the sample video or the
+// pipeline itself changes.
+export async function getSampleAnalysis(): Promise<PointAnalysis> {
+    const response = await fetch('/sample-analysis.json')
+
+    if (!response.ok) {
+        throw new Error(`Failed to load sample analysis: ${response.status} ${response.statusText}`)
+    }
+
+    return response.json() as Promise<PointAnalysis>
+}
