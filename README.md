@@ -7,8 +7,13 @@ This project is inspired by [this tutorial](https://www.youtube.com/watch?v=L23o
 To Do: Continue building the frontend, deploy it, Heatmap regression models to replace current ball tracking and court keypoints.
 
 <p align="center">
-  <img src="courthawk_engine/data/output_videos/sinner_zverev_output.gif" width="70%">
+  <img src="courthawk_engine/data/assets/frontend1.png" width="80%">
 </p>
+
+<p align="center">
+  <img src="courthawk_engine/data/assets/frontend2.png" width="80%">
+</p>
+
 
 ## How It Works
 
