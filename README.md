@@ -2,11 +2,19 @@
   <img src="courthawk_engine/data/assets/logo_with_title.png" width="60%">
 </p>
 
-Computer vision system for tennis that detects and tracks players and ball, estimates player poses, classifies shots, detects court geometry, and projects movements onto a bird's-eye-view using homography.
+## About CourtHawk
 
-This project is inspired by [this tutorial](https://www.youtube.com/watch?v=L23oIHZE14w). It has since been substantially expanded and reworked, with significant improvements to the code structure, system architecture, and computer vision methods.
+Computer vision system for tennis that detects and tracks players and ball, estimates player poses, classifies shots, detects court geometry, and projects movements onto a bird's-eye-view using homography. 
 
-To Do: Continue building the frontend, deploy it, Heatmap regression models to replace current ball tracking and court keypoints.
+Try CourtHawk at [Click Here](https://courthawk.vercel.app/).
+
+This project is inspired by [this tutorial](https://www.youtube.com/watch?v=L23oIHZE14w). It has since been substantially expanded and reworked, with significant improvements to the code structure and computer vision methods.
+
+## Upcoming/To Do
+- Heatmap regression models to replace current ball tracking and court keypoints
+- Remove the pose estimation for shot classification since it is too inaccurate, especially for the player on the far side as crops have low quality. Instead, extract 5 crops around the player that hits a ball and run it through a 3D CNN model. This could also allow us to classify whether a shot is top-spin or low-spin. 
+- Frontend UX edits: Add shot stats on hover on the dots
+- Method for determining when a ball bounces
 
 <p align="center">
   <img src="courthawk_engine/data/assets/frontend1.png" width="80%">
@@ -19,9 +27,7 @@ To Do: Continue building the frontend, deploy it, Heatmap regression models to r
 
 ## How It Works
 
-The below is an analysis on how the system works when we run `python3 -m courthawk-engine.main`. The system works very similarly on the web app, except that only the bounding boxes and court keypoints are overlayed onto the video. The mini-court and statistics are displayed elsewhere on the frontend. However, the mathematical logic remains the same.
-
----
+Below is an analysis on how the system works in general, as the are some minor differences between running `courthawk_engine/main.py` and running the full application on the web app.
 
 ### Input
 
@@ -41,7 +47,7 @@ The ball boys and chair umpire are likely to also be tracked by the model, so to
 
 $$\text{score} = \gamma \cdot (\alpha \cdot (\text{sum of distances to nearest 3 keypoints}) + \beta \cdot (\text{distance to nearest center hash mark}))$$
 
-with $\alpha = 0.2$ and $\beta = 0.8$ by default. The $\gamma$ parameter is 0.5 if the player is on the close side of the court and 1 otherwise. The sum of the Eucliden distances from the nearest 3 court keypoints provides a good measure of approxiamately how close a person is to the court. The distance to the nearest center hash mark is used to filter out ball boys and the chair umpire who might also be near the court. The $\gamma$ term is used because player selection occurs from the original TV-angle, and thus a fixed real-world distance corresponds to more pixels on the near side of the court than on the far side. The $\gamma$ term is important for ensuring ball boys on the far side of the court are not chosen as players.
+with $\alpha = 0.2$ and $\beta = 0.8$ by default. The $\gamma$ parameter is $0.5$ if the player is on the close side of the court and $1$ otherwise. The sum of the Eucliden distances from the nearest 3 court keypoints provides a good measure of approxiamately how close a person is to the court. The distance to the nearest center hash mark is used to filter out ball boys and the chair umpire who might also be near the court. The $\gamma$ term is used because player selection occurs from the original TV-angle, and thus a fixed real-world distance corresponds to more pixels on the near side of the court than on the far side. The $\gamma$ term is important for ensuring ball boys on the far side of the court are not chosen as players.
 
 #### Interpolating Missing Detections
 
@@ -97,7 +103,7 @@ $$
 
 ### Mini-Court
 
-The minicourt provides a bird-eye's view of the point. The player and ball positions are approxiamated since it is impossible to determine the height of the tennis ball given only a single angle of the point. 
+The minicourt provides a bird-eye's view of the point. The player and ball positions are approxiamated since it is very difficult to determine the height of the tennis ball given only a single angle of the point. 
 
 #### Homography
 
@@ -150,6 +156,16 @@ When we detected the shots using the algorithm above, we also determined which p
 
 For each cropped frame, we run MediaPipe's Pose Estimation model. MediaPipe detects 33 body landmarks, including the shoulders, elbows, wrists, hips, knees, and ankles. Each landmark contains an estimated $(x, y)$ position.
 
+#### XOR Logic for Handedness and Side
+
+The ability for the user to set the handedness of the players is currently under development. Before extracting a feature vector from the crops, we use the formula:
+
+$$
+\text{Flip Crop?} = \text{Lefty?} \oplus \text{Player on Far Side?}
+$$
+
+If the formula evaluates to true for any player, we flip the crops. This ensures that the feature vector extraction is not influenced by which side the player is on or their handedness. 
+
 #### Feature Vector Extraction
 
 Rather than use the landmark positions directly, we extract a smaller set of features relevant to tennis that describe the players pose. The positions are centered at the players mid-shoulder position and then normalized by their torso length so that the representation is less sensitive to the player's size or distance from camera. Below is a list of all the features extracted.
@@ -169,13 +185,13 @@ Rather than use the landmark positions directly, we extract a smaller set of fea
 13. Right elbow x-position: Same reasoning as right wrist x-position
 14. Signed wrist separation: Expect largest separation magnitude for forehands and lowest separation magnitude for backhands.
 
-#### Softmax/Multinomial Logistic Regression
+#### Random Forest Classifier
 
-The extracted feature vector is used to train a `Softmax/Multinomial Logistic Regression` model to classify shots for 3 classes: forehand, backhand, and serve. The training dataset was extracted from videos by hand. The system applies the model for all 7 frames and decides by a majority vote.
+The extracted feature vector is used to train a `RandomForest` model to classify shots for 3 classes: forehand, backhand, and serve. The training dataset was extracted from videos by hand. The system applies the model for all 7 frames and decides by a majority vote.
 
-#### Potential Improvement: Real-ESRGAN Image Upscaling
+#### Potential Improvement: 3D CNN
 
-Due to the small size of players, the cropped box contains a very low quality image, making it difficult for MediaPipe to determine the 33 landmarks. We should consider using methods like Real-ESRGAN to upscale the images before inference. Additionally, we should consider training 2 separate models for the players on the 2 sides of the court. 
+Due to the small size of players, the cropped box contains a very low quality image, making it difficult for MediaPipe to determine the 33 landmarks. A potential improvement is to forgo the pose estimation entirely and feed the 7 frames (duplicate frames if at the beginning or end of video to ensure we have 7 crops) into a 3D CNN 
 
 ---
 
@@ -191,7 +207,7 @@ The last shot speed is calculated by using when the player last hit the ball as 
 
 ### Output
 
-Running `courthawk_engine/main.py` will produce a video with all of the above overlayed on the orginal video. When running the system using the deployed app (coming soon), the results will be displayed next to the video.
+Running `courthawk_engine/main.py` will produce a video with all of the above overlayed on the orginal video. When running the system using the deployed app, the results will be displayed next to the video.
 
 ## File Structure
 
@@ -204,13 +220,30 @@ CourtHawk/
 │   ├── minicourt/                   # Mini-court overlay, homography, shot/speed stats
 │   ├── pose_estimation/             # MediaPipe pose extraction and shot classification
 │   ├── renderer/                    # Draws tracking/stat overlays back onto the video
-│   ├── models/                      # Trained model weights (gitignored)
+│   ├── models/                      # Trained model weights (gitignored, hosted on HuggingFace)
 │   ├── data/                        # Input/output videos and training data (gitignored, except input/output videos)
 │   ├── stubs/                       # Cached detection results (pickle) to skip re-inference for testing
 │   ├── development/                 # Notebooks used to build and prototype the pipeline
 │   ├── engine.py                    # Public API entry point used by the backend
-│   └── main.py                      # Standalone script to run the full pipeline for testing
+│   ├── main.py                      # Standalone script to run the full pipeline for testing, generates only the annotated video
+│   ├── build_shot_dataset.py        # Semi-automated shot-classification training data collection
+│   └── download_models_from_hf.py   # Pulls model weights from HuggingFace during the Docker build
 │
-├── backend/                         # API layer (in progress)
-└── frontend/                        # UI layer (in progress)
+├── backend/                         # FastAPI layer
+│   ├── routes/                      # POST /analyze
+│   ├── config.py                    # Paths and CORS settings
+│   ├── main.py                      # FastAPI app entry point
+│   ├── generate_sample_analysis.py  # Pre-computes the cached "Try this sample" result
+│   ├── Dockerfile                   # Deploy image (Render)
+│   └── requirements.txt             # Deploy-only Python dependencies
+│
+└── frontend/                        # React + TypeScript UI (Vite), deployed on Vercel
+    ├── public/                      # Static assets, sample video, cached sample analysis JSON
+    └── src/
+        ├── api/                     # Backend fetch calls
+        ├── components/              # MiniCourt, VideoPlayer, AnalysisTimeline, ShotTrack, PlayerSpeedTrack, etc.
+        ├── hooks/                   # useVideoTime
+        ├── types/                   # PointAnalysis contract
+        ├── constants/               # Shared player-color mapping
+        └── App.tsx                  # Top-level layout
 ```
