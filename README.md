@@ -1,4 +1,6 @@
-# CourtHawk
+<p align="left">
+  <img src="courthawk_engine/data/assets/logo_with_title.png" width="60%">
+</p>
 
 Computer vision system for tennis that detects and tracks players and ball, estimates player poses, classifies shots, detects court geometry, and projects movements onto a bird's-eye-view using homography.
 

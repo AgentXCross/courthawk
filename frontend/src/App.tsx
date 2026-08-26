@@ -8,6 +8,7 @@ import MiniCourt from "./components/MiniCourt"
 import VideoPlayer from './components/VideoPlayer'
 import AnalysisTimeline from './components/AnalysisTimeline'
 import courthawkLogo from './assets/courthawk_logo.png'
+import PanelCorners from './components/PanelCorners'
 
 function App() {
   // UI state 
@@ -69,61 +70,81 @@ function App() {
   return (
     <div id="layout">
       <nav id="navbar">
-        <img id="navbar-logo" src={courthawkLogo} alt="CourtHawk logo" />
+        <div id="navbar-brand">
+          <img id="navbar-logo" src={courthawkLogo} alt="CourtHawk logo" />
+          <span id="navbar-title">CourtHawk</span>
+        </div>
         <a id="navbar-github" href="https://github.com/AgentXCross/courthawk" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+          </svg>
           GitHub
         </a>
-        <div id="navbar-title">CourtHawk</div>
-        <div id="navbar-subtitle">Computer Vision Tennis System</div>
       </nav>
-      <section id="hero">
-        <p id="hero-status">Currently in development.</p>
-      </section>
       <div id="content">
-        <section id="mini-court">
-          <MiniCourt analysis={analysis} currentFrame={currentFrame}/>
+        <aside id="sidebar" className="panel">
+          <PanelCorners />
+          <h3 className="panel-title">About CourtHawk</h3>
+          <p id="sidebar-text">
+            CourtHawk is a computer vision system for tennis that detects and tracks players and ball, 
+            estimates player poses, classifies shots, detects court geometry, and projects movements onto a bird's-eye-view using homography.
+          </p>
+
+          <p id="sidebar-text">
+            As input, CourtHawk expects the video to only contain one point starting at the serve and ending when the point finishes. 
+            The footage must be from the standard broadcast TV camera angle. Both players visible and ready from the very first frame
+            and the camera cannot move during the duration of the point.
+          </p>
+
+          <p id="sidebar-text">
+            For a full analysis of the pipeline, read the README.md markdown file on GitHub. CourtHawk is 
+            currently under development with many upcoming changes.
+          </p>
+        </aside>
+        <section id="mini-court" className="panel">
+          <PanelCorners />
+          <h3 className="panel-title">Court Map</h3>
+          <div className="panel-content">
+            <MiniCourt analysis={analysis} currentFrame={currentFrame}/>
+          </div>
         </section>
-        <section id="video">
-          {analysis ? (
-            <VideoPlayer src={analysis.annotated_video_path} videoRef={videoRef}/>
-          ) : (
-            <div
-              id="upload-dropzone"
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/*"
-                onChange={handleInputChange}
-                hidden
-              />
-              <span id="upload-icon">{isLoading ? '⏳' : '⬆'}</span>
-              <h2>{isLoading ? 'Running your point through CourtHawk' : 'Drop your point'}</h2>
-              <p>{isLoading ? 'Breaking down every shot…' : 'Click or drag a video file to get started'}</p>
-              {!isLoading && (
-                <button id="try-sample-button" onClick={handleTrySample}>
-                  Try this sample
-                </button>
-              )}
-              {!isLoading && (
-                <ul id="upload-requirements">
-                  <li>Footage must be from the standard broadcast TV camera angle</li>
-                  <li>Must contain one point only starting at the serve and ending when the point finishes</li>
-                  <li>Both players visible and ready from the very first frame</li>
-                  <li>Camera must be stationary during the duration of the point</li>
-                </ul>
-              )}
-              {error && <p id="upload-error">{error}</p>}
-            </div>
-          )}
+        <section id="video" className="panel">
+          <PanelCorners />
+          <h3 className="panel-title">Match Video</h3>
+          <div className="panel-content">
+            {analysis ? (
+              <VideoPlayer src={analysis.annotated_video_path} videoRef={videoRef}/>
+            ) : (
+              <div
+                id="upload-dropzone"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleInputChange}
+                  hidden
+                />
+                <span id="upload-icon">{isLoading ? '⏳' : '⬆'}</span>
+                <h2>{isLoading ? 'Running your point through CourtHawk' : 'Drop your point'}</h2>
+                <p>{isLoading ? 'Breaking down every shot…' : 'Click or drag a video file to get started'}</p>
+                {!isLoading && (
+                  <button id="try-sample-button" onClick={handleTrySample}>
+                    Try this sample
+                  </button>
+                )}
+                {error && <p id="upload-error">{error}</p>}
+              </div>
+            )}
+          </div>
+        </section>
+        <section id="stats">
+          <AnalysisTimeline analysis={analysis} currentFrame={currentFrame} />
         </section>
       </div>
-      <section id="stats">
-        <AnalysisTimeline analysis={analysis} currentFrame={currentFrame} />
-      </section>
     </div>
   )
 }

@@ -6,7 +6,7 @@ interface MiniCourtProps {
   currentFrame: number
 }
 
-const PADDING = 5 // meters of extra space around the court, for players standing behind the baseline
+const PADDING = 4 // meters of extra space around the court, for players standing behind the baseline
 
 // Mirrors engine.py's _real_court_keypoints(). That function only ever depends on fixed
 // court-dimension constants, never on the video, so this layout is identical on every analysis.
@@ -69,22 +69,35 @@ function MiniCourt({ analysis, currentFrame }: MiniCourtProps) {
       viewBox={`${-PADDING} ${-PADDING} ${width + 2 * PADDING} ${length + 2 * PADDING}`}
       preserveAspectRatio="xMidYMid slice"
     >
-      <rect x={-PADDING} y={-PADDING} width={width + 2 * PADDING} height={length + 2 * PADDING} fill="#00c5f1" /> {/*#63ab64 for green*/}
-      <rect x={0} y={0} width={width} height={length} fill="#0165a1" />
+      <defs>
+        <filter id="mini-court-line-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.12" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
 
-      {COURT_LINES.map(([a, b], i) => (
-        <line
-          key={i}
-          x1={keypoints[a].x}
-          y1={keypoints[a].y}
-          x2={keypoints[b].x}
-          y2={keypoints[b].y}
-          stroke="white"
-          strokeWidth={0.2}
-        />
-      ))}
+      <rect x={-PADDING} y={-PADDING} width={width + 2 * PADDING} height={length + 2 * PADDING} fill="#000000" /> {/*#63ab64 for green*/}
+      <rect x={0} y={0} width={width} height={length} fill="#000000" />
 
-      <line x1={0} y1={length / 2} x2={width} y2={length / 2} stroke="white" strokeWidth={0.25} />
+      <g filter="url(#mini-court-line-glow)">
+        {COURT_LINES.map(([a, b], i) => (
+          <line
+            key={i}
+            x1={keypoints[a].x}
+            y1={keypoints[a].y}
+            x2={keypoints[b].x}
+            y2={keypoints[b].y}
+            stroke="white"
+            strokeWidth={0.15}
+          />
+        ))}
+
+        <line x1={0} y1={length / 2} x2={width} y2={length / 2} stroke="white" strokeWidth={0.15} />
+      </g>
 
       {keypoints.map((point, i) => (
         <circle key={i} cx={point.x} cy={point.y} r={0.1} fill="white" />
@@ -92,10 +105,10 @@ function MiniCourt({ analysis, currentFrame }: MiniCourtProps) {
 
       {analysis &&
         (Object.entries(playerPositions) as [CourtSide, Point][]).map(([side, point]) => (
-          <circle key={side} cx={point.x} cy={point.y} r={0.4} fill={PLAYER_COLORS[side]} stroke="black" strokeWidth={0.1} />
+          <circle key={side} cx={point.x} cy={point.y} r={0.4} fill={PLAYER_COLORS[side]} />
         ))}
 
-      {analysis && ballPosition && <circle cx={ballPosition.x} cy={ballPosition.y} stroke="black" strokeWidth={0.1} r={0.3} fill="#CCFF00" />}
+      {analysis && ballPosition && <circle cx={ballPosition.x} cy={ballPosition.y} r={0.3} fill="#CCFF00" />}
     </svg>
   )
 }

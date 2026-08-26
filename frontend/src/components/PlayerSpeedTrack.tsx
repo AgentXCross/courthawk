@@ -7,18 +7,8 @@ interface PlayerSpeedTrackProps {
   totalFrames: number
 }
 
-// Step ("staircase") line
-function buildStepPoints(samples: { x: number; y: number }[]): string {
-  if (samples.length === 0) return ''
-
-  const parts = [`${samples[0].x},${samples[0].y}`]
-  for (let i = 1; i < samples.length; i++) {
-    const prev = samples[i - 1]
-    const curr = samples[i]
-    parts.push(`${curr.x},${prev.y}`) // horizontal segment at the previous height
-    parts.push(`${curr.x},${curr.y}`) // vertical segment up/down to the new height
-  }
-  return parts.join(' ')
+function buildLinePoints(samples: { x: number; y: number }[]): string {
+  return samples.map(({ x, y }) => `${x},${y}`).join(' ')
 }
 
 function PlayerSpeedTrack({ playerIds, playerSpeeds, totalFrames }: PlayerSpeedTrackProps) {
@@ -48,7 +38,7 @@ function PlayerSpeedTrack({ playerIds, playerSpeeds, totalFrames }: PlayerSpeedT
             return (
               <polyline
                 key={playerId}
-                points={buildStepPoints(samples)}
+                points={buildLinePoints(samples)}
                 fill="none"
                 stroke={PLAYER_COLORS[playerId]}
                 strokeWidth={1.2}

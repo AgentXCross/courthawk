@@ -1,6 +1,7 @@
 import type { PointAnalysis } from '../types/analysis'
 import ShotTrack from './ShotTrack'
 import PlayerSpeedTrack from './PlayerSpeedTrack'
+import PanelCorners from './PanelCorners'
 
 interface AnalysisTimelineProps {
   analysis: PointAnalysis | null
@@ -13,7 +14,8 @@ function AnalysisTimeline({ analysis, currentFrame }: AnalysisTimelineProps) {
   const progress = totalFrames > 0 ? Math.min(1, currentFrame / totalFrames) : 0
 
   return (
-    <div id="analysis-timeline">
+    <div id="analysis-timeline" className="panel">
+      <PanelCorners />
       <ShotTrack shots={analysis?.shots ?? []} totalFrames={totalFrames} />
       <PlayerSpeedTrack
         playerIds={analysis?.player_ids ?? []}
