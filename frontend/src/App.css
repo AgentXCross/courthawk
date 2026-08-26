@@ -8,7 +8,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(180deg, rgb(236, 0, 140) 0%, #000002 70%);
+  background: linear-gradient(180deg, rgb(19, 0, 188) 0%, #000002 90%);
   padding: 0rem 4rem;
 }
 
@@ -381,8 +381,8 @@
 .shot-dot {
   position: absolute;
   top: 50%;
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }

@@ -4,11 +4,10 @@ Backend configuration.
 Filesystem paths and CORS settings (controls whether a webpage at one origin is allowed to 
 make requests to a server at another origin).
 
-All paths are resolved from this file's own locations. This is because uvicorn can be launched
-from anyone in the repo. Anchoring on __file__ makes these paths correct no matter where the process
-is run from.
+Anchoring on __file__.
 """
 
+import os
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -24,8 +23,5 @@ OUTPUT_VIDEOS_DIR = ENGINE_DIR / "data" / "output_videos"
 # URL prefix for accessing processed videos stored in OUTPUT_VIDEOS_DIR.
 VIDEOS_URL_PREFIX = "/videos"
 
-# Frontend dev server origin(s) allowed to call this API. 
-# *** Update this once frontend tooling is picked.
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
+# Frontend origin(s) allowed to call this API.
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",")

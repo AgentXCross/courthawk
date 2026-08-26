@@ -13,8 +13,8 @@ function buildLinePoints(samples: { x: number; y: number }[]): string {
 
 function PlayerSpeedTrack({ playerIds, playerSpeeds, totalFrames }: PlayerSpeedTrackProps) {
   const allSpeeds = playerSpeeds.flatMap((sample) => Object.values(sample.speeds_kmh))
-  // +5 over the fastest identified speed, so the tallest step doesn't touch the top edge
-  const axisMax = Math.max(1, ...allSpeeds) + 5
+  // +1 over the fastest identified speed, so the tallest step doesn't touch the top edge
+  const axisMax = Math.max(1, ...allSpeeds) + 1
 
   return (
     <>
@@ -41,7 +41,7 @@ function PlayerSpeedTrack({ playerIds, playerSpeeds, totalFrames }: PlayerSpeedT
                 points={buildLinePoints(samples)}
                 fill="none"
                 stroke={PLAYER_COLORS[playerId]}
-                strokeWidth={1.2}
+                strokeWidth={0.7}
               />
             )
           })}

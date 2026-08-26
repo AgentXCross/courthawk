@@ -6,10 +6,10 @@ interface ShotTrackProps {
 }
 
 const SHOT_COLORS: Record<ShotType, string> = {
-  forehand: '#ff8c28',
-  backhand: '#1000f2',
-  serve: '#ff2828',
-  unknown: '#9b9b9b',
+  forehand: '#ff9a0d',
+  backhand: '#13c0ff',
+  serve: '#2fff00',
+  unknown: '#8a8a8a',
 }
 
 function ShotTrack({ shots, totalFrames }: ShotTrackProps) {

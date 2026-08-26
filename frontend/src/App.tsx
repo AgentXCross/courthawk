@@ -84,7 +84,7 @@ function App() {
       <div id="content">
         <aside id="sidebar" className="panel">
           <PanelCorners />
-          <h3 className="panel-title">About CourtHawk</h3>
+          <h3 className="panel-title">About</h3>
           <p id="sidebar-text">
             CourtHawk is a computer vision system for tennis that detects and tracks players and ball, 
             estimates player poses, classifies shots, detects court geometry, and projects movements onto a bird's-eye-view using homography.
@@ -103,14 +103,14 @@ function App() {
         </aside>
         <section id="mini-court" className="panel">
           <PanelCorners />
-          <h3 className="panel-title">Court Map</h3>
+          <h3 className="panel-title">Bird's-Eye View</h3>
           <div className="panel-content">
             <MiniCourt analysis={analysis} currentFrame={currentFrame}/>
           </div>
         </section>
         <section id="video" className="panel">
           <PanelCorners />
-          <h3 className="panel-title">Match Video</h3>
+          <h3 className="panel-title">Point Video</h3>
           <div className="panel-content">
             {analysis ? (
               <VideoPlayer src={analysis.annotated_video_path} videoRef={videoRef}/>

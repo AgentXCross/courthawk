@@ -71,7 +71,7 @@ function MiniCourt({ analysis, currentFrame }: MiniCourtProps) {
     >
       <defs>
         <filter id="mini-court-line-glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="0.12" result="blur" />
+          <feGaussianBlur stdDeviation="0.3" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="blur" />

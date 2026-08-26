@@ -1,0 +1,15 @@
+# Runtime-only dependencies for the deployed backend. torch/torchvision are installed
+# separately in the Dockerfile from the CPU wheel index
+numpy
+opencv-python
+ultralytics
+mediapipe
+Pillow
+pandas
+scipy
+xgboost
+
+fastapi
+uvicorn
+python-multipart
+huggingface_hub
