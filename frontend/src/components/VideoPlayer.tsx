@@ -6,6 +6,7 @@ import { useVideoTime } from '../hooks/useVideoTime'
 interface VideoPlayerProps {
   src: string
   videoRef: RefObject<HTMLVideoElement | null>
+  onReady?: () => void
 }
 
 function formatTime(seconds: number): string {
@@ -20,7 +21,7 @@ function formatTime(seconds: number): string {
 // hooks are non-standard and being phased out, Firefox exposes none at all), so this builds
 // a custom play button + seek bar + time display instead, using the same currentTime
 // tracking (useVideoTime) the mini-court/timeline already sync to.
-function VideoPlayer({ src, videoRef }: VideoPlayerProps) {
+function VideoPlayer({ src, videoRef, onReady }: VideoPlayerProps) {
   const currentTime = useVideoTime(videoRef, true)
   const [duration, setDuration] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -29,7 +30,10 @@ function VideoPlayer({ src, videoRef }: VideoPlayerProps) {
     const video = videoRef.current
     if (!video) return
 
-    const handleLoadedMetadata = () => setDuration(video.duration)
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration)
+      onReady?.()
+    }
     const handlePlay = () => setIsPlaying(true)
     const handlePause = () => setIsPlaying(false)
 
@@ -37,7 +41,10 @@ function VideoPlayer({ src, videoRef }: VideoPlayerProps) {
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)
 
-    if (video.readyState >= 1) setDuration(video.duration)
+    if (video.readyState >= 1) {
+      setDuration(video.duration)
+      onReady?.()
+    }
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata)

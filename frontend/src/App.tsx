@@ -14,6 +14,7 @@ function App() {
   // UI state 
   const [analysis, setAnalysis] = useState<PointAnalysis | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const currentTime = useVideoTime(videoRef, analysis !== null)
@@ -22,9 +23,10 @@ function App() {
   // Reference to an HTML <input> element
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  async function handleFile(file: File) { 
+  async function handleFile(file: File) {
     // async function so when we await we continue with other operations while waiting for the analysis
     setIsLoading(true)
+    setVideoReady(false)
     setError(null)
 
     try {
@@ -55,6 +57,7 @@ function App() {
     event.stopPropagation()
 
     setIsLoading(true)
+    setVideoReady(false)
     setError(null)
 
     try {
@@ -81,6 +84,12 @@ function App() {
           GitHub
         </a>
       </nav>
+      <p id="ram-warning">
+        Warning: Backend is hosted on Render free-tier with only 512 MB of RAM. 
+        The models themselves require at least 1 GB so uploading your own video will not work on 
+        the web app, though will work if the project is run locally. The "Try Sample" feature won't hit memory limit since
+        its outputs are pre-computed.
+      </p>
       <div id="content">
         <aside id="sidebar" className="panel">
           <PanelCorners />
@@ -113,7 +122,20 @@ function App() {
           <h3 className="panel-title">Point Video</h3>
           <div className="panel-content">
             {analysis ? (
-              <VideoPlayer src={analysis.annotated_video_path} videoRef={videoRef}/>
+              <div id="video-wrapper">
+                <VideoPlayer src={analysis.annotated_video_path} videoRef={videoRef} onReady={() => setVideoReady(true)}/>
+                {!videoReady && (
+                  <div id="video-loading-overlay">
+                    <span className="dot-spinner">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </span>
+                    <h2>Loading Video...</h2>
+                    <p>This can take longer than usual when the app has been idle.</p>
+                  </div>
+                )}
+              </div>
             ) : (
               <div
                 id="upload-dropzone"
@@ -128,7 +150,15 @@ function App() {
                   onChange={handleInputChange}
                   hidden
                 />
-                <span id="upload-icon">{isLoading ? '⏳' : '⬆'}</span>
+                {isLoading ? (
+                  <span className="dot-spinner">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </span>
+                ) : (
+                  <span id="upload-icon">⬆</span>
+                )}
                 <h2>{isLoading ? 'Running your point through CourtHawk' : 'Drop your point'}</h2>
                 <p>{isLoading ? 'Breaking down every shot…' : 'Click or drag a video file to get started'}</p>
                 {!isLoading && (
